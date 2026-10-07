@@ -1,9 +1,11 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/context/ThemeProvider";
 import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
+import InstallAppBanner from "@/components/InstallAppBanner";
+import PwaRegister from "@/components/PwaRegister";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,12 +17,25 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const viewport: Viewport = {
+  themeColor: "#18221e",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+};
+
 export const metadata: Metadata = {
   title: "Majesty Peacock Pathfinder Club - Souvenir Shop",
   description: "Official AY Ministry Souvenirs & Regalia Store for Majesty Peacock Pathfinder Club",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Majesty Peacock",
+  },
   icons: {
-    icon: "/images/logo1.jpeg",
-    apple: "/images/logo1.jpeg",
+    icon: "/icon.svg",
+    apple: "/icon.svg",
   },
 };
 
@@ -36,6 +51,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <PwaRegister />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -44,6 +60,7 @@ export default function RootLayout({
         >
           <AuthProvider>
             <CartProvider>
+              <InstallAppBanner />
               {children}
             </CartProvider>
           </AuthProvider>

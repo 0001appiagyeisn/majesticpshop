@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient: Deep Slate Pine -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f261e" />
+      <stop offset="100%" stop-color="#071410" />
+    </linearGradient>
+
+    <!-- Vibrant Colorful M Gradient: Emerald -> Cyan -> Royal Violet -> Gold -->
+    <linearGradient id="mGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="30%" stop-color="#06b6d4" />
+      <stop offset="65%" stop-color="#8b5cf6" />
+      <stop offset="100%" stop-color="#f59e0b" />
+    </linearGradient>
+
+    <!-- Glowing Accent -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="12" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+
+    <linearGradient id="borderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.8" />
+      <stop offset="50%" stop-color="#06b6d4" stop-opacity="0.5" />
+      <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.8" />
+    </linearGradient>
+  </defs>
+
+  <!-- Squircle Rounded Badge Background -->
+  <rect x="16" y="16" width="480" height="480" rx="120" fill="url(#bgGrad)" stroke="url(#borderGrad)" stroke-width="12" />
+
+  <!-- Subtle Peacock Eye Accent Dot above the M peak -->
+  <circle cx="256" cy="115" r="16" fill="#f59e0b" filter="url(#glow)" />
+  <circle cx="256" cy="115" r="9" fill="#06b6d4" />
+
+  <!-- Bold, Vibrant Colorful 'M' -->
+  <path
+    d="M 120,380 
+       L 120,180 
+       A 20,20 0 0,1 155,165 
+       L 256,290 
+       L 357,165 
+       A 20,20 0 0,1 392,180 
+       L 392,380 
+       A 18,18 0 0,1 356,380 
+       L 356,238 
+       L 272,342 
+       A 20,20 0 0,1 240,342 
+       L 156,238 
+       L 156,380 
+       A 18,18 0 0,1 120,380 Z"
+    fill="url(#mGrad)"
+    filter="url(#glow)"
+  />
+</svg>
