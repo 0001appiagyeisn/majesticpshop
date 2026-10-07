@@ -55,83 +55,100 @@ export default function Navbar({ onOpenCart, searchQuery = "", onSearchChange }:
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border bg-card/90 backdrop-blur-md shadow-sm transition-colors">
-      <div className="container mx-auto px-4 h-20 flex items-center justify-between gap-4">
-        {/* Brand Logo & Name */}
-        <Link href="/" className="flex items-center gap-2.5 sm:gap-3 group">
-          {/* Official Adventist Church Emblem (SDA Logo) */}
-          <div className="relative h-11 sm:h-12 px-2 py-1 rounded-xl overflow-hidden border border-border shadow-sm bg-card group-hover:scale-105 transition-transform flex-shrink-0 flex items-center justify-center">
-            <img
-              src="/images/logo2.jpg"
-              alt="Seventh-day Adventist Church Logo"
-              className="h-full w-auto object-contain max-h-8 sm:max-h-9"
-            />
+      <div className="container mx-auto px-3 sm:px-4">
+        {/* Main Header Row */}
+        <div className="h-16 sm:h-20 flex items-center justify-between gap-2.5 sm:gap-4">
+          {/* Brand Logo & Name */}
+          <Link href="/" className="flex items-center gap-2 sm:gap-3 group min-w-0">
+            {/* Official Adventist Church Emblem (SDA Logo) */}
+            <div className="relative h-10 sm:h-12 px-1.5 sm:px-2 py-1 rounded-xl overflow-hidden border border-border shadow-sm bg-card group-hover:scale-105 transition-transform flex-shrink-0 flex items-center justify-center">
+              <img
+                src="/images/logo2.jpg"
+                alt="Seventh-day Adventist Church Logo"
+                className="h-full w-auto object-contain max-h-7 sm:max-h-9"
+              />
+            </div>
+
+            {/* Club Peacock Crest */}
+            <div className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden border-2 border-emerald-depth shadow-md bg-white p-0.5 group-hover:scale-105 transition-transform flex-shrink-0">
+              <img
+                src="/images/logo1.jpeg"
+                alt="Majestic Peacock Pathfinder Club"
+                className="w-full h-full object-contain"
+              />
+            </div>
+
+            <div className="flex flex-col truncate">
+              <span className="font-extrabold text-sm sm:text-lg tracking-tight text-foreground leading-tight group-hover:text-primary transition-colors truncate">
+                Majesty Peacock
+              </span>
+              <span className="text-[10px] sm:text-xs font-semibold text-botanical-green uppercase tracking-wider truncate">
+                Pathfinder Club Shop
+              </span>
+            </div>
+          </Link>
+
+          {/* Desktop Live Search Bar with Secret Admin Access */}
+          <div className="flex-1 max-w-md mx-2 hidden md:block">
+            <form onSubmit={handleSearchSubmit} className="relative">
+              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Search souvenir items... (e.g. shirt, hoodie)"
+                className="w-full pl-9 pr-4 py-2 text-sm rounded-full bg-background border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-muted-foreground/70"
+                value={localQuery}
+                onChange={handleInputChange}
+              />
+            </form>
           </div>
 
-          {/* Club Peacock Crest */}
-          <div className="relative w-11 h-11 sm:w-12 sm:h-12 rounded-full overflow-hidden border-2 border-emerald-depth shadow-md bg-white p-0.5 group-hover:scale-105 transition-transform flex-shrink-0">
-            <img
-              src="/images/logo1.jpeg"
-              alt="Majestic Peacock Pathfinder Club"
-              className="w-full h-full object-contain"
-            />
-          </div>
+          {/* Actions */}
+          <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
+            {/* Theme Toggle */}
+            {mounted && (
+              <button
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                className="p-2 sm:p-2.5 rounded-full hover:bg-muted text-foreground transition-colors"
+                title="Toggle theme"
+                aria-label="Toggle theme"
+              >
+                {theme === "dark" ? (
+                  <Sun size={19} className="text-yellow-400" />
+                ) : (
+                  <Moon size={19} className="text-emerald-depth" />
+                )}
+              </button>
+            )}
 
-          <div className="flex flex-col">
-            <span className="font-extrabold text-base sm:text-lg tracking-tight text-foreground leading-tight group-hover:text-primary transition-colors">
-              Majesty Peacock
-            </span>
-            <span className="text-xs font-semibold text-botanical-green uppercase tracking-wider">
-              Pathfinder Club Shop
-            </span>
+            {/* Cart Button */}
+            <button
+              onClick={onOpenCart}
+              className="relative flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-full bg-primary text-primary-foreground font-bold shadow hover:opacity-90 active:scale-95 transition-all text-xs sm:text-sm"
+              aria-label="Open cart"
+            >
+              <ShoppingCart size={18} />
+              <span className="hidden sm:inline">Cart</span>
+              {totalItems > 0 && (
+                <span className="inline-flex items-center justify-center px-1.5 sm:px-2 py-0.5 text-[11px] font-bold leading-none text-white bg-red-600 rounded-full animate-pulse">
+                  {totalItems}
+                </span>
+              )}
+            </button>
           </div>
-        </Link>
+        </div>
 
-        {/* Live Search Bar with Secret Admin Access */}
-        <div className="flex-1 max-w-md mx-2 hidden md:block">
+        {/* Mobile Live Search Bar (Always visible on mobile screens) */}
+        <div className="pb-3 md:hidden">
           <form onSubmit={handleSearchSubmit} className="relative">
-            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Search souvenir items... (e.g. shirt, hoodie)"
-              className="w-full pl-9 pr-4 py-2 text-sm rounded-full bg-background border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-muted-foreground/70"
+              placeholder="Search souvenirs... (or type admin code)"
+              className="w-full pl-9 pr-4 py-2 text-xs rounded-full bg-background border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-muted-foreground/70 shadow-sm"
               value={localQuery}
               onChange={handleInputChange}
             />
           </form>
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          {/* Theme Toggle */}
-          {mounted && (
-            <button
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="p-2.5 rounded-full hover:bg-muted text-foreground transition-colors"
-              title="Toggle theme"
-              aria-label="Toggle theme"
-            >
-              {theme === "dark" ? (
-                <Sun size={20} className="text-yellow-400" />
-              ) : (
-                <Moon size={20} className="text-emerald-depth" />
-              )}
-            </button>
-          )}
-
-          {/* Cart Button */}
-          <button
-            onClick={onOpenCart}
-            className="relative flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground font-bold shadow hover:opacity-90 active:scale-95 transition-all text-sm"
-            aria-label="Open cart"
-          >
-            <ShoppingCart size={19} />
-            <span className="hidden sm:inline">Cart</span>
-            {totalItems > 0 && (
-              <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full animate-pulse">
-                {totalItems}
-              </span>
-            )}
-          </button>
         </div>
       </div>
     </nav>
