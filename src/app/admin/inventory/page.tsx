@@ -263,10 +263,10 @@ export default function InventoryPage() {
 
           await addProduct({
             name: aiData.name,
-            description: aiData.description || `${aiData.name} (${aiData.unit || "General"} Unit)`,
+            description: aiData.description || (aiData.unit && aiData.unit !== 'Club Wears' ? `${aiData.name} (${aiData.unit} Unit)` : `${aiData.name} (Club Wears)`),
             price: aiData.price || 50,
             categoryId: catId || "",
-            unit: (aiData.unit as ClubUnit) || "General",
+            unit: (aiData.unit as ClubUnit) || "Club Wears",
             imageUrls: imagesToAdd,
             requiresSize: aiData.requiresSize || false,
             requiresColor: aiData.requiresColor || false,
@@ -608,7 +608,7 @@ export default function InventoryPage() {
                   <input
                     required
                     type="text"
-                    placeholder="e.g. Club hoodie - Capricorn"
+                    placeholder="e.g. Unit Hoodie - Capricorn or Club Hoodie"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-border text-sm outline-none focus:border-primary"
@@ -621,7 +621,7 @@ export default function InventoryPage() {
                   </label>
                   <textarea
                     rows={2}
-                    placeholder="e.g. Official club hoodie for Capricorn Unit, featuring the Capricorn mascot emblem."
+                    placeholder="e.g. Official Unit Hoodie for Capricorn Unit, featuring the goat emblem."
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     className="w-full px-3.5 py-2 rounded-xl bg-background border border-border text-xs outline-none focus:border-primary resize-none"

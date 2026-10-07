@@ -5,7 +5,7 @@ import path from 'path';
 
 // Known item catalogue with default prices
 const catalogItems = [
-  { baseName: "Club hoodie", category: "Hoodies", defaultPrice: 150, requiresSize: true, requiresColor: true },
+  { baseName: "Club hoodie", category: "Hoodies", defaultPrice: 350, requiresSize: true, requiresColor: true },
   { baseName: "Majestic Peacock shirt", category: "Shirts", defaultPrice: 100, requiresSize: true, requiresColor: true },
   { baseName: "Majestic Peachick shirt", category: "Shirts", defaultPrice: 100, requiresSize: true, requiresColor: true },
   { baseName: "Club neckerchief", category: "Neckerchiefs & Slides", defaultPrice: 65, requiresSize: false, requiresColor: false },
@@ -96,26 +96,42 @@ export async function POST(req: Request) {
       3. **Chrysanthemum Unit**: Signified by a CHRYSANTHEMUM FLOWER or FLORAL emblem!
       4. **Club Wears**: Signified by a PEACOCK, PEACHICK, PEACOCK FEATHERS, or standard club regalia/crest/apparel.
 
-      ITEM TYPE RECOGNITION:
-      - Uniform sew-on club tags / Embroidered patches / Shoulder strips / Sleeve tags / Name badges -> Category: "Tags & Pins", Default price: 20 - 30 GHC (requiresSize: false, requiresColor: false). These are club tags meant to be sewn directly onto uniform shirts or sashes.
+      ITEM TYPE RECOGNITION & PRICING:
+      - Uniform sew-on club tags / Embroidered patches / Shoulder strips / Sleeve tags / Name badges -> Category: "Tags & Pins", Default price: 20 - 30 GHC (requiresSize: false, requiresColor: false). These are tags meant to be sewn directly onto uniform shirts or sashes.
       - Metal lapel pins / Enamel badges / Name tags -> Category: "Tags & Pins", Default price: 15 - 25 GHC
-      - Hoodies / Pullovers / Sweaters -> Category: "Hoodies", Default price: 150 GHC
+      - Club Hoodies (Peacock / Club Wears) -> Category: "Hoodies", Default price: 350 GHC
+      - Unit Hoodies (Capricorn, Tiger, Chrysanthemum) -> Category: "Hoodies", Default price: 150 GHC
       - T-Shirts / Collared Shirts -> Category: "Shirts", Default price: 100 GHC
       - Neckerchiefs / Scarf -> Category: "Neckerchiefs & Slides", Default price: 65 GHC
       - Neckerchief Slides / Woggles -> Category: "Neckerchiefs & Slides", Default price: 30 GHC
       - Baseball Caps / Berets / Crests -> Category: "Caps & Crests", Default price: 50 GHC (crest: 20 GHC)
       - Water bottles -> Category: "Accessories", Default price: 150 GHC
 
-      NAMING & DESCRIPTION CONVENTION:
-      - If it is a sew-on uniform tag/patch: name it appropriately, e.g. "Club Sew-on Tag - Capricorn" or "Uniform Shoulder Tag" or "Majestic Peacock Sew-on Tag".
-      - If the item belongs to a specific unit (Capricorn, Tiger, or Chrysanthemum), include the unit in the name and description.
-      - Description: Write a clear sentence containing the item type, intended uniform or club use, and unit. E.g.: "Official embroidered club tag to sew on uniform, representing Capricorn Unit."
+      STRICT NAMING & DESCRIPTION CONVENTION (CRITICAL):
+      1. UNIT ITEMS (Capricorn, Tiger, Chrysanthemum):
+         - MUST NEVER be titled "Club [Item]".
+         - MUST ALWAYS use the format: "Unit [Item] - [Unit]".
+         - Examples:
+           * "Unit T-Shirt - Capricorn" (NEVER Club T-Shirt)
+           * "Unit Hoodie - Chrysanthemum" (NEVER Club Hoodie)
+           * "Unit Hoodie - Tiger"
+           * "Unit Sew-on Tag - Capricorn"
+         - Description: "Official Unit [Item] for [Unit] Unit."
+
+      2. CLUB WEARS (Peacock, Peachick, Crest, club-wide items):
+         - Only items representing the entire club use "Club [Item]".
+         - Examples:
+           * "Club Hoodie" (Default price: 350 GHC)
+           * "Club T-Shirt" (Default price: 100 GHC)
+           * "Club Neckerchief"
+           * "Club Beret"
+         - Description: "Official Majestic Peacock Club [Item]."
 
       Return ONLY a pure raw JSON object with NO markdown backticks:
       {
-        "name": "Product Name with Unit (e.g. Club hoodie - Capricorn)",
+        "name": "Unit Hoodie - Chrysanthemum" or "Club Hoodie",
         "unit": "Capricorn" | "Tiger" | "Chrysanthemum" | "Club Wears",
-        "description": "Short description mentioning unit like: Club hoodie - Capricorn. Official regalia...",
+        "description": "Short description mentioning unit or club regalia",
         "category": "Shirts" | "Hoodies" | "Neckerchiefs & Slides" | "Caps & Crests" | "Tags & Pins" | "Accessories",
         "price": number,
         "requiresSize": boolean,
@@ -167,8 +183,43 @@ export async function POST(req: Request) {
       .trim();
 
     const data = JSON.parse(cleaned);
-    if (data.unit === 'General') {
+    if (data.unit === 'General' || !data.unit) {
       data.unit = 'Club Wears';
+    }
+
+    // Programmatic Safeguard: Enforce strict "Unit [Item] - [Unit]" vs "Club [Item]"
+    const unitLower = (data.unit || '').toLowerCase();
+    const isSpecificUnit = ['capricorn', 'tiger', 'chrysanthemum'].includes(unitLower);
+
+    if (isSpecificUnit) {
+      const formattedUnit = data.unit.charAt(0).toUpperCase() + data.unit.slice(1).toLowerCase();
+      data.unit = formattedUnit;
+
+      let name = (data.name || '').trim();
+      name = name.replace(/^club\s+/i, 'Unit ');
+      if (!name.toLowerCase().startsWith('unit ')) {
+        name = `Unit ${name}`;
+      }
+      if (!name.toLowerCase().includes(unitLower)) {
+        name = `${name} - ${formattedUnit}`;
+      }
+      data.name = name;
+
+      // Unit hoodies are 150 GHC
+      if (data.category === 'Hoodies' || data.name.toLowerCase().includes('hoodie')) {
+        if (!data.price || data.price === 350) {
+          data.price = 150;
+        }
+      }
+    } else {
+      data.unit = 'Club Wears';
+      // Club hoodies are 350 GHC
+      if (data.category === 'Hoodies' || (data.name && data.name.toLowerCase().includes('hoodie'))) {
+        data.price = 350;
+      }
+      if (data.name && data.name.toLowerCase().startsWith('unit ')) {
+        data.name = data.name.replace(/^unit\s+/i, 'Club ');
+      }
     }
 
     if (secondaryImage) {
