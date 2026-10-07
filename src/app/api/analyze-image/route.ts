@@ -22,6 +22,9 @@ const catalogItems = [
   { baseName: "Peachick Cap crest", category: "Caps & Crests", defaultPrice: 20, requiresSize: false, requiresColor: false },
   { baseName: "Club pin", category: "Tags & Pins", defaultPrice: 15, requiresSize: false, requiresColor: false },
   { baseName: "Shoulder tag (Peacock and Peachick)", category: "Tags & Pins", defaultPrice: 25, requiresSize: false, requiresColor: false },
+  { baseName: "Uniform sew-on club tag", category: "Tags & Pins", defaultPrice: 25, requiresSize: false, requiresColor: false },
+  { baseName: "Uniform sew-on rank tag", category: "Tags & Pins", defaultPrice: 20, requiresSize: false, requiresColor: false },
+  { baseName: "Unit sew-on patch", category: "Tags & Pins", defaultPrice: 25, requiresSize: false, requiresColor: false },
 ];
 
 export async function POST(req: Request) {
@@ -83,6 +86,9 @@ export async function POST(req: Request) {
     const prompt = `
       You are an expert AI recognition assistant for the Majesty Peacock Pathfinder Club shop.
       
+      CRITICAL INSTRUCTION - ACCEPT ALL UPLOADED SHOP ITEMS:
+      Every photo uploaded by an admin is an authentic, valid item sold in the Majesty Peacock Pathfinder Club shop. NEVER say "not in the shop", "not recognized", or reject an item! Always classify it into the best category.
+
       CRITICAL INSTRUCTION - VISUAL MASCOT / UNIT IDENTIFICATION:
       Our club has 3 specialized units plus a general club-wide tier:
       1. **Capricorn Unit**: Signified by a GOAT, HORNED CREATURE, RAM, or SEA-GOAT graphic/mascot printed or embroidered on the item! If you see a goat or horns, it is 100% CAPRICORN!
@@ -91,20 +97,19 @@ export async function POST(req: Request) {
       4. **Club Wears**: Signified by a PEACOCK, PEACHICK, PEACOCK FEATHERS, or standard club regalia/crest/apparel.
 
       ITEM TYPE RECOGNITION:
+      - Uniform sew-on club tags / Embroidered patches / Shoulder strips / Sleeve tags / Name badges -> Category: "Tags & Pins", Default price: 20 - 30 GHC (requiresSize: false, requiresColor: false). These are club tags meant to be sewn directly onto uniform shirts or sashes.
+      - Metal lapel pins / Enamel badges / Name tags -> Category: "Tags & Pins", Default price: 15 - 25 GHC
       - Hoodies / Pullovers / Sweaters -> Category: "Hoodies", Default price: 150 GHC
       - T-Shirts / Collared Shirts -> Category: "Shirts", Default price: 100 GHC
       - Neckerchiefs / Scarf -> Category: "Neckerchiefs & Slides", Default price: 65 GHC
       - Neckerchief Slides / Woggles -> Category: "Neckerchiefs & Slides", Default price: 30 GHC
       - Baseball Caps / Berets / Crests -> Category: "Caps & Crests", Default price: 50 GHC (crest: 20 GHC)
       - Water bottles -> Category: "Accessories", Default price: 150 GHC
-      - Badges / Pins / Name tags -> Category: "Tags & Pins", Default price: 15 - 25 GHC
 
       NAMING & DESCRIPTION CONVENTION:
-      - If the item belongs to a specific unit (Capricorn, Tiger, or Chrysanthemum), include the unit in the name and description:
-        Example name: "Club hoodie - Capricorn" or "Club neckerchief - Capricorn" or "Club hoodie - Tiger".
-        If general club wear: "Majestic Peacock shirt" or "Peacock neckerchief".
-      - Description: Write a clear sentence containing the item type and unit, e.g.:
-        "Official club hoodie for Capricorn Unit, featuring the Capricorn goat mascot emblem."
+      - If it is a sew-on uniform tag/patch: name it appropriately, e.g. "Club Sew-on Tag - Capricorn" or "Uniform Shoulder Tag" or "Majestic Peacock Sew-on Tag".
+      - If the item belongs to a specific unit (Capricorn, Tiger, or Chrysanthemum), include the unit in the name and description.
+      - Description: Write a clear sentence containing the item type, intended uniform or club use, and unit. E.g.: "Official embroidered club tag to sew on uniform, representing Capricorn Unit."
 
       Return ONLY a pure raw JSON object with NO markdown backticks:
       {

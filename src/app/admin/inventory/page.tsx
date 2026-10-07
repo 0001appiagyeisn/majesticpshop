@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { getProducts, addProduct, deleteProduct, updateProduct, getCategories, addCategory, uploadImageToFirebase, getFirebaseProductImages } from "@/lib/services";
+import { getProducts, addProduct, deleteProduct, updateProduct, getCategories, addCategory, uploadImageToFirebase } from "@/lib/services";
 import { Product, Category, ClubUnit } from "@/types";
 import { Plus, Edit2, Trash2, Image as ImageIcon, Sparkles, Loader2, X, Search, CheckCircle, Upload, Layers, Users } from "lucide-react";
 
@@ -18,7 +18,6 @@ const formatImageUrl = (img?: string) => {
 export default function InventoryPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [availableImages, setAvailableImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
@@ -52,26 +51,12 @@ export default function InventoryPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [fetchedProducts, fetchedCategories, imgRes, fbImages] = await Promise.all([
+      const [fetchedProducts, fetchedCategories] = await Promise.all([
         getProducts(),
         getCategories(),
-        fetch('/api/images'),
-        getFirebaseProductImages()
       ]);
       setProducts(fetchedProducts);
       setCategories(fetchedCategories);
-
-      let localImages: string[] = [];
-      try {
-        const imgData = await imgRes.json();
-        if (imgData.images) {
-          localImages = imgData.images.filter((img: string) => !img.startsWith('logo'));
-        }
-      } catch (e) {
-        console.warn("Could not read local images", e);
-      }
-
-      setAvailableImages([...fbImages, ...localImages]);
     } catch (error) {
       console.error(error);
     } finally {
@@ -145,7 +130,6 @@ export default function InventoryPage() {
     setUploadingFile(true);
     try {
       const downloadUrl = await uploadImageToFirebase(file);
-      setAvailableImages(prev => [downloadUrl, ...prev.filter(u => u !== downloadUrl)]);
       await handleSelectImage(downloadUrl);
     } catch (err: any) {
       console.error("File upload failed", err);
@@ -238,7 +222,6 @@ export default function InventoryPage() {
         newUrls.push(downloadUrl);
       }
       setBatchQueue(prev => [...prev, ...newUrls].slice(0, 15));
-      setAvailableImages(prev => [...newUrls, ...prev]);
     } catch (err: any) {
       console.error("Batch upload failed:", err);
       alert(`Error uploading batch files: ${err?.message || "Storage error"}`);
@@ -532,8 +515,8 @@ export default function InventoryPage() {
                 Selected Main Images for Batch:
               </span>
               {batchQueue.length === 0 ? (
-                <p className="text-xs text-muted-foreground italic py-3 text-center">
-                  No main photos selected yet. Click any picture below to add it to your batch queue!
+                <p className="text-xs text-muted-foreground italic py-8 text-center">
+                  No photos in the batch queue yet. Click &quot;Upload New Photos from Files&quot; above to select photos from your device!
                 </p>
               ) : (
                 <div className="flex flex-wrap gap-2.5">
@@ -557,40 +540,7 @@ export default function InventoryPage() {
               )}
             </div>
 
-            {/* Available Images Grid to Pick From */}
-            <div>
-              <span className="text-xs font-bold uppercase text-muted-foreground block mb-2">
-                Click photos to add/remove from batch:
-              </span>
-              <div className="grid grid-cols-4 sm:grid-cols-6 gap-2.5 max-h-56 overflow-y-auto p-1 hide-scrollbar">
-                {availableImages
-                  .filter(img => !img.replace(/\.[^/.]+$/, "").endsWith("b"))
-                  .map((img) => {
-                    const isSelected = batchQueue.includes(img);
-                    return (
-                      <button
-                        key={img}
-                        type="button"
-                        onClick={() => toggleBatchImage(img)}
-                        className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all ${
-                          isSelected ? "border-primary scale-105 shadow-md" : "border-border hover:border-primary/50 opacity-80 hover:opacity-100"
-                        }`}
-                        title={img}
-                      >
-                        <img src={formatImageUrl(img)} alt="" className="w-full h-full object-cover" />
-                        {isSelected && (
-                          <div className="absolute top-1 right-1 w-5 h-5 rounded-full bg-primary text-white flex items-center justify-center text-xs shadow">
-                            <CheckCircle size={14} />
-                          </div>
-                        )}
-                        <span className="absolute bottom-0 inset-x-0 bg-black/70 text-white text-[9px] truncate px-1">
-                          {img.startsWith('http') ? 'Uploaded' : img}
-                        </span>
-                      </button>
-                    );
-                  })}
-              </div>
-            </div>
+
 
             {/* Batch Progress Bar if running */}
             {batchProcessing && batchProgress && (
@@ -798,10 +748,10 @@ export default function InventoryPage() {
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploadingFile || formData.imageUrls.length >= 7}
-                    className="w-full py-2.5 rounded-xl bg-primary/10 border border-primary/30 text-primary font-bold text-xs flex items-center justify-center gap-2 hover:bg-primary/20 transition-all shadow-sm"
+                    className="w-full py-3 rounded-xl bg-primary/10 border border-primary/30 text-primary font-bold text-xs flex items-center justify-center gap-2 hover:bg-primary/20 transition-all shadow-sm"
                   >
                     {uploadingFile ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
-                    Upload Photo from Computer
+                    Upload Photo from Device (Phone / PC)
                   </button>
                 </div>
 
@@ -820,10 +770,10 @@ export default function InventoryPage() {
                   )}
                 </div>
 
-                {/* Selected Images */}
-                <div className="flex flex-wrap gap-2 p-2 bg-muted/30 rounded-2xl min-h-20 border border-border mb-4">
+                {/* Selected Images Tray */}
+                <div className="flex flex-wrap gap-2 p-3 bg-muted/30 rounded-2xl min-h-24 border border-border">
                   {formData.imageUrls.map((img, idx) => (
-                    <div key={img} className="relative group w-14 h-14 rounded-xl overflow-hidden border border-border bg-card shadow-sm">
+                    <div key={img} className="relative group w-16 h-16 rounded-xl overflow-hidden border border-border bg-card shadow-sm">
                       <img src={formatImageUrl(img)} alt="" className="w-full h-full object-cover" />
                       <button
                         type="button"
@@ -831,7 +781,7 @@ export default function InventoryPage() {
                         className="absolute inset-0 bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                         title="Remove photo"
                       >
-                        <X size={14} />
+                        <X size={16} />
                       </button>
                       {idx === 0 && (
                         <span className="absolute bottom-0 inset-x-0 bg-primary text-[8px] text-white text-center font-bold">Main</span>
@@ -842,45 +792,11 @@ export default function InventoryPage() {
                     </div>
                   ))}
                   {formData.imageUrls.length === 0 && (
-                    <p className="text-xs text-muted-foreground p-3 italic">
-                      Click any photo below or upload one to attach.
-                    </p>
+                    <div className="text-xs text-muted-foreground py-8 text-center italic w-full">
+                      No photos attached yet. Click &quot;Upload Photo from Device&quot; above to attach pictures of this souvenir.
+                    </div>
                   )}
                 </div>
-
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="text-xs font-bold uppercase text-primary flex items-center gap-1.5">
-                    <Sparkles size={14} /> Available Photos
-                  </h4>
-                  <span className="text-[10px] text-muted-foreground font-semibold">
-                    {availableImages.length} available
-                  </span>
-                </div>
-
-                {/* Grid of Available Images */}
-                <div className="grid grid-cols-4 gap-2 overflow-y-auto max-h-52 pr-1 hide-scrollbar">
-                  {availableImages
-                    .filter(img => !formData.imageUrls.includes(img))
-                    .map((img) => (
-                      <button
-                        type="button"
-                        key={img}
-                        onClick={() => handleSelectImage(img)}
-                        disabled={formData.imageUrls.length >= 7 || analyzingImage}
-                        className="relative aspect-square rounded-xl overflow-hidden border border-border hover:border-primary hover:scale-105 transition-all group disabled:opacity-40"
-                        title={img}
-                      >
-                        <img src={formatImageUrl(img)} alt="" className="w-full h-full object-cover" />
-                        <span className="absolute bottom-0 inset-x-0 bg-black/70 text-white text-[8px] truncate px-0.5">
-                          {img.startsWith('http') ? 'Uploaded' : img}
-                        </span>
-                      </button>
-                    ))}
-                </div>
-              </div>
-
-              <div className="pt-3 text-[11px] text-muted-foreground border-t border-border mt-3">
-                Selecting <code>p15.jpeg</code> automatically attaches companion <code>p15b.jpeg</code> as photo #2.
               </div>
             </div>
 

@@ -71,3 +71,4 @@ export async function compressImageFile(file: File, maxWidth = 800, quality = 0.
     reader.onerror = (err) => reject(err);
   });
 }
+
