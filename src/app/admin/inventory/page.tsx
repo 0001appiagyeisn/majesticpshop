@@ -1,11 +1,19 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { getProducts, addProduct, deleteProduct, updateProduct, getCategories, addCategory } from "@/lib/services";
+import { getProducts, addProduct, deleteProduct, updateProduct, getCategories, addCategory, uploadImageToFirebase, getFirebaseProductImages } from "@/lib/services";
 import { Product, Category, ClubUnit } from "@/types";
 import { Plus, Edit2, Trash2, Image as ImageIcon, Sparkles, Loader2, X, Search, CheckCircle, Upload, Layers, Users } from "lucide-react";
 
 const CLUB_UNITS: ClubUnit[] = ["Tiger", "Capricorn", "Chrysanthemum", "Club Wears"];
+
+const formatImageUrl = (img?: string) => {
+  if (!img) return "";
+  if (img.startsWith("http://") || img.startsWith("https://") || img.startsWith("/")) {
+    return img;
+  }
+  return `/images/${img}`;
+};
 
 export default function InventoryPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -44,20 +52,26 @@ export default function InventoryPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [fetchedProducts, fetchedCategories, imgRes] = await Promise.all([
+      const [fetchedProducts, fetchedCategories, imgRes, fbImages] = await Promise.all([
         getProducts(),
         getCategories(),
-        fetch('/api/images')
+        fetch('/api/images'),
+        getFirebaseProductImages()
       ]);
       setProducts(fetchedProducts);
       setCategories(fetchedCategories);
 
-      const imgData = await imgRes.json();
-      if (imgData.images) {
-        // Exclude the logos from product candidate list
-        const productImages = imgData.images.filter((img: string) => !img.startsWith('logo'));
-        setAvailableImages(productImages);
+      let localImages: string[] = [];
+      try {
+        const imgData = await imgRes.json();
+        if (imgData.images) {
+          localImages = imgData.images.filter((img: string) => !img.startsWith('logo'));
+        }
+      } catch (e) {
+        console.warn("Could not read local images", e);
       }
+
+      setAvailableImages([...fbImages, ...localImages]);
     } catch (error) {
       console.error(error);
     } finally {
@@ -130,26 +144,12 @@ export default function InventoryPage() {
 
     setUploadingFile(true);
     try {
-      const uploadData = new FormData();
-      uploadData.append('file', file);
-
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        body: uploadData,
-      });
-      const data = await res.json();
-
-      if (data.fileName) {
-        const imgRes = await fetch('/api/images');
-        const imgData = await imgRes.json();
-        if (imgData.images) {
-          setAvailableImages(imgData.images.filter((img: string) => !img.startsWith('logo')));
-        }
-        await handleSelectImage(data.fileName);
-      }
-    } catch (err) {
+      const downloadUrl = await uploadImageToFirebase(file);
+      setAvailableImages(prev => [downloadUrl, ...prev.filter(u => u !== downloadUrl)]);
+      await handleSelectImage(downloadUrl);
+    } catch (err: any) {
       console.error("File upload failed", err);
-      alert("Failed to upload image from device.");
+      alert(`Failed to upload image: ${err?.message || "Storage error"}`);
     } finally {
       setUploadingFile(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -231,24 +231,17 @@ export default function InventoryPage() {
 
     setUploadingFile(true);
     try {
+      const newUrls: string[] = [];
       for (let i = 0; i < files.length; i++) {
-        if (batchQueue.length >= 15) break;
-        const uploadData = new FormData();
-        uploadData.append('file', files[i]);
-
-        const res = await fetch('/api/upload', {
-          method: 'POST',
-          body: uploadData,
-        });
-        const data = await res.json();
-        if (data.fileName) {
-          setBatchQueue(prev => [...prev, data.fileName].slice(0, 15));
-        }
+        if (batchQueue.length + newUrls.length >= 15) break;
+        const downloadUrl = await uploadImageToFirebase(files[i]);
+        newUrls.push(downloadUrl);
       }
-      fetchData();
-    } catch (err) {
-      console.error(err);
-      alert("Error uploading batch files.");
+      setBatchQueue(prev => [...prev, ...newUrls].slice(0, 15));
+      setAvailableImages(prev => [...newUrls, ...prev]);
+    } catch (err: any) {
+      console.error("Batch upload failed:", err);
+      alert(`Error uploading batch files: ${err?.message || "Storage error"}`);
     } finally {
       setUploadingFile(false);
       if (batchFileInputRef.current) batchFileInputRef.current.value = "";
@@ -418,7 +411,7 @@ export default function InventoryPage() {
                       <div className="w-12 h-12 rounded-xl overflow-hidden bg-muted border border-border flex-shrink-0 relative">
                         {product.imageUrls?.[0] ? (
                           <img
-                            src={`/images/${product.imageUrls[0]}`}
+                            src={formatImageUrl(product.imageUrls[0])}
                             alt={product.name}
                             className="w-full h-full object-cover"
                           />
@@ -546,7 +539,7 @@ export default function InventoryPage() {
                 <div className="flex flex-wrap gap-2.5">
                   {batchQueue.map((img, idx) => (
                     <div key={img} className="relative group w-16 h-16 rounded-xl overflow-hidden border border-primary bg-card shadow-sm">
-                      <img src={`/images/${img}`} alt="" className="w-full h-full object-cover" />
+                      <img src={formatImageUrl(img)} alt="" className="w-full h-full object-cover" />
                       <span className="absolute top-1 left-1 w-4 h-4 rounded-full bg-primary text-white text-[10px] font-bold flex items-center justify-center">
                         {idx + 1}
                       </span>
@@ -584,14 +577,14 @@ export default function InventoryPage() {
                         }`}
                         title={img}
                       >
-                        <img src={`/images/${img}`} alt="" className="w-full h-full object-cover" />
+                        <img src={formatImageUrl(img)} alt="" className="w-full h-full object-cover" />
                         {isSelected && (
                           <div className="absolute top-1 right-1 w-5 h-5 rounded-full bg-primary text-white flex items-center justify-center text-xs shadow">
                             <CheckCircle size={14} />
                           </div>
                         )}
                         <span className="absolute bottom-0 inset-x-0 bg-black/70 text-white text-[9px] truncate px-1">
-                          {img}
+                          {img.startsWith('http') ? 'Uploaded' : img}
                         </span>
                       </button>
                     );
@@ -831,7 +824,7 @@ export default function InventoryPage() {
                 <div className="flex flex-wrap gap-2 p-2 bg-muted/30 rounded-2xl min-h-20 border border-border mb-4">
                   {formData.imageUrls.map((img, idx) => (
                     <div key={img} className="relative group w-14 h-14 rounded-xl overflow-hidden border border-border bg-card shadow-sm">
-                      <img src={`/images/${img}`} alt="" className="w-full h-full object-cover" />
+                      <img src={formatImageUrl(img)} alt="" className="w-full h-full object-cover" />
                       <button
                         type="button"
                         onClick={() => removeImage(img)}
@@ -877,9 +870,9 @@ export default function InventoryPage() {
                         className="relative aspect-square rounded-xl overflow-hidden border border-border hover:border-primary hover:scale-105 transition-all group disabled:opacity-40"
                         title={img}
                       >
-                        <img src={`/images/${img}`} alt="" className="w-full h-full object-cover" />
+                        <img src={formatImageUrl(img)} alt="" className="w-full h-full object-cover" />
                         <span className="absolute bottom-0 inset-x-0 bg-black/70 text-white text-[8px] truncate px-0.5">
-                          {img}
+                          {img.startsWith('http') ? 'Uploaded' : img}
                         </span>
                       </button>
                     ))}

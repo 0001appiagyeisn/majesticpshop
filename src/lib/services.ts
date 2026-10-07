@@ -1,4 +1,4 @@
-import { db } from "./firebase";
+import { db, storage } from "./firebase";
 import { 
   collection, 
   doc, 
@@ -12,7 +12,29 @@ import {
   serverTimestamp,
   increment
 } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL, listAll } from "firebase/storage";
 import { Product, Order, Category } from "@/types";
+
+// --- STORAGE SERVICES ---
+export const uploadImageToFirebase = async (file: File): Promise<string> => {
+  const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const uniqueName = `products/${Date.now()}_${cleanName}`;
+  const storageRef = ref(storage, uniqueName);
+  const snapshot = await uploadBytes(storageRef, file);
+  return await getDownloadURL(snapshot.ref);
+};
+
+export const getFirebaseProductImages = async (): Promise<string[]> => {
+  try {
+    const listRef = ref(storage, 'products');
+    const res = await listAll(listRef);
+    const urls = await Promise.all(res.items.map(itemRef => getDownloadURL(itemRef)));
+    return urls;
+  } catch (e) {
+    console.warn("Could not list Firebase images", e);
+    return [];
+  }
+};
 
 // --- CATEGORY SERVICES ---
 export const getCategories = async (): Promise<Category[]> => {

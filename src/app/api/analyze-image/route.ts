@@ -27,31 +27,49 @@ const catalogItems = [
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { imageName } = body;
+    const imageName = body.imageName || body.imageUrl;
 
     if (!imageName) {
-      return NextResponse.json({ error: 'Image name is required' }, { status: 400 });
+      return NextResponse.json({ error: 'Image name or URL is required' }, { status: 400 });
     }
 
-    const imagePath = path.join(process.cwd(), 'public', 'images', imageName);
-    
-    if (!fs.existsSync(imagePath)) {
-      return NextResponse.json({ error: 'Image not found' }, { status: 404 });
-    }
-
-    const imageBuffer = fs.readFileSync(imagePath);
-    const base64Image = imageBuffer.toString('base64');
-    const mimeType = imageName.endsWith('.png') ? 'image/png' : 'image/jpeg';
-
-    // Auto-detect companion "b" image (e.g. p15.jpeg -> p15b.jpeg)
+    let base64Image: string;
+    let mimeType: string = 'image/jpeg';
     let secondaryImage: string | null = null;
-    const ext = path.extname(imageName);
-    const baseName = path.basename(imageName, ext);
-    if (!baseName.endsWith('b')) {
-      const companionName = `${baseName}b${ext}`;
-      const companionPath = path.join(process.cwd(), 'public', 'images', companionName);
-      if (fs.existsSync(companionPath)) {
-        secondaryImage = companionName;
+
+    if (imageName.startsWith('http://') || imageName.startsWith('https://')) {
+      const response = await fetch(imageName);
+      if (!response.ok) {
+        return NextResponse.json({ error: 'Failed to download image from URL' }, { status: 400 });
+      }
+      const arrayBuffer = await response.arrayBuffer();
+      base64Image = Buffer.from(arrayBuffer).toString('base64');
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('png')) {
+        mimeType = 'image/png';
+      } else if (contentType && contentType.includes('webp')) {
+        mimeType = 'image/webp';
+      }
+    } else {
+      const imagePath = path.join(process.cwd(), 'public', 'images', imageName);
+      
+      if (!fs.existsSync(imagePath)) {
+        return NextResponse.json({ error: 'Image not found' }, { status: 404 });
+      }
+
+      const imageBuffer = fs.readFileSync(imagePath);
+      base64Image = imageBuffer.toString('base64');
+      mimeType = imageName.endsWith('.png') ? 'image/png' : 'image/jpeg';
+
+      // Auto-detect companion "b" image (e.g. p15.jpeg -> p15b.jpeg)
+      const ext = path.extname(imageName);
+      const baseName = path.basename(imageName, ext);
+      if (!baseName.endsWith('b')) {
+        const companionName = `${baseName}b${ext}`;
+        const companionPath = path.join(process.cwd(), 'public', 'images', companionName);
+        if (fs.existsSync(companionPath)) {
+          secondaryImage = companionName;
+        }
       }
     }
 

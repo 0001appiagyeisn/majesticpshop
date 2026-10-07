@@ -175,7 +175,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                           <div className="w-20 h-20 rounded-xl overflow-hidden bg-muted border border-border flex-shrink-0">
                             {item.product.imageUrls?.[0] ? (
                               <img
-                                src={`/images/${item.product.imageUrls[0]}`}
+                                src={item.product.imageUrls[0]?.startsWith("http") || item.product.imageUrls[0]?.startsWith("/") ? item.product.imageUrls[0] : `/images/${item.product.imageUrls[0]}`}
                                 alt={item.product.name}
                                 className="w-full h-full object-cover"
                               />

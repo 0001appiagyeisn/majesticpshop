@@ -134,7 +134,7 @@ export default function ProductModal({ product, onClose, onOpenCart }: ProductMo
                 {currentImage ? (
                   <motion.img
                     key={currentImage}
-                    src={`/images/${currentImage}`}
+                    src={currentImage?.startsWith("http") || currentImage?.startsWith("/") ? currentImage : `/images/${currentImage}`}
                     alt={product.name}
                     initial={{ opacity: 0, scale: 0.96 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -198,7 +198,7 @@ export default function ProductModal({ product, onClose, onOpenCart }: ProductMo
                       selectedImageIndex === idx ? "border-primary scale-105 shadow-md" : "border-border opacity-70 hover:opacity-100"
                     }`}
                   >
-                    <img src={`/images/${img}`} alt="" className="w-full h-full object-cover" />
+                    <img src={img?.startsWith("http") || img?.startsWith("/") ? img : `/images/${img}`} alt="" className="w-full h-full object-cover" />
                   </button>
                 ))}
               </div>
