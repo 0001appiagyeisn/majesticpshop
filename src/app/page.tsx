@@ -57,7 +57,7 @@ function ProductCard({
           <AnimatePresence mode="wait">
             <motion.img
               key={images[activeImgIndex]}
-              src={images[activeImgIndex]?.startsWith("http") || images[activeImgIndex]?.startsWith("/") ? images[activeImgIndex] : `/images/${images[activeImgIndex]}`}
+              src={images[activeImgIndex]?.startsWith("http") || images[activeImgIndex]?.startsWith("data:") || images[activeImgIndex]?.startsWith("/") ? images[activeImgIndex] : `/images/${images[activeImgIndex]}`}
               alt={product.name}
               initial={{ opacity: 0.8 }}
               animate={{ opacity: 1 }}

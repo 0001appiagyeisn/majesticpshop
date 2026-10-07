@@ -15,25 +15,18 @@ import {
 import { ref, uploadBytes, getDownloadURL, listAll } from "firebase/storage";
 import { Product, Order, Category } from "@/types";
 
-// --- STORAGE SERVICES ---
+import { compressImageFile } from "./image-compression";
+
+// --- STORAGE SERVICES (Zero-Cost In-Database Compressed Storage) ---
 export const uploadImageToFirebase = async (file: File): Promise<string> => {
-  const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-  const uniqueName = `products/${Date.now()}_${cleanName}`;
-  const storageRef = ref(storage, uniqueName);
-  const snapshot = await uploadBytes(storageRef, file);
-  return await getDownloadURL(snapshot.ref);
+  // Compresses the image to modern WebP (~30-50KB) so it can be stored directly
+  // in Firestore without needing a Blaze/credit card plan.
+  return await compressImageFile(file, 800, 0.75);
 };
 
 export const getFirebaseProductImages = async (): Promise<string[]> => {
-  try {
-    const listRef = ref(storage, 'products');
-    const res = await listAll(listRef);
-    const urls = await Promise.all(res.items.map(itemRef => getDownloadURL(itemRef)));
-    return urls;
-  } catch (e) {
-    console.warn("Could not list Firebase images", e);
-    return [];
-  }
+  // Kept for backward compatibility
+  return [];
 };
 
 // --- CATEGORY SERVICES ---

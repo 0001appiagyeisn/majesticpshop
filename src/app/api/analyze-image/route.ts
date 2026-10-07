@@ -37,7 +37,14 @@ export async function POST(req: Request) {
     let mimeType: string = 'image/jpeg';
     let secondaryImage: string | null = null;
 
-    if (imageName.startsWith('http://') || imageName.startsWith('https://')) {
+    if (imageName.startsWith('data:image/')) {
+      const commaIndex = imageName.indexOf(',');
+      base64Image = imageName.substring(commaIndex + 1);
+      const mimeMatch = imageName.substring(0, commaIndex).match(/data:(.*?);/);
+      if (mimeMatch && mimeMatch[1]) {
+        mimeType = mimeMatch[1];
+      }
+    } else if (imageName.startsWith('http://') || imageName.startsWith('https://')) {
       const response = await fetch(imageName);
       if (!response.ok) {
         return NextResponse.json({ error: 'Failed to download image from URL' }, { status: 400 });

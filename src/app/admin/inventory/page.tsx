@@ -9,7 +9,7 @@ const CLUB_UNITS: ClubUnit[] = ["Tiger", "Capricorn", "Chrysanthemum", "Club Wea
 
 const formatImageUrl = (img?: string) => {
   if (!img) return "";
-  if (img.startsWith("http://") || img.startsWith("https://") || img.startsWith("/")) {
+  if (img.startsWith("http://") || img.startsWith("https://") || img.startsWith("data:") || img.startsWith("/")) {
     return img;
   }
   return `/images/${img}`;
