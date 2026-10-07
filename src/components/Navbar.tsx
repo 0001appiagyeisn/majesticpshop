@@ -143,7 +143,7 @@ export default function Navbar({ onOpenCart, searchQuery = "", onSearchChange }:
             <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Search souvenirs... (or type admin code)"
+              placeholder="Search souvenirs... (e.g. shirt, hoodie)"
               className="w-full pl-9 pr-4 py-2 text-xs rounded-full bg-background border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-muted-foreground/70 shadow-sm"
               value={localQuery}
               onChange={handleInputChange}

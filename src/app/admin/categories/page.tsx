@@ -75,8 +75,9 @@ export default function CategoriesPage() {
         </button>
       </form>
 
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
-        <table className="w-full text-left">
+      <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+        <div className="overflow-x-auto w-full">
+          <table className="w-full min-w-[320px] text-left">
           <thead className="bg-muted text-muted-foreground">
             <tr>
               <th className="px-6 py-4 font-medium">Name</th>
@@ -107,6 +108,7 @@ export default function CategoriesPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

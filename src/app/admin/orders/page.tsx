@@ -102,61 +102,68 @@ export default function OrdersPage() {
         </div>
       </div>
 
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-muted text-muted-foreground">
-            <tr>
-              <th className="px-6 py-4 font-medium">Order ID</th>
-              <th className="px-6 py-4 font-medium">Customer</th>
-              <th className="px-6 py-4 font-medium">Total</th>
-              <th className="px-6 py-4 font-medium">Status</th>
-              <th className="px-6 py-4 font-medium text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {filteredOrders.length === 0 ? (
+      {/* Mobile Swipe Hint */}
+      <div className="md:hidden text-[11px] text-muted-foreground font-semibold px-1">
+        <span>👈 Swipe table sideways to see details & export PDF 👉</span>
+      </div>
+
+      <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+        <div className="overflow-x-auto w-full">
+          <table className="w-full min-w-[680px] text-left">
+            <thead className="bg-muted text-muted-foreground">
               <tr>
-                <td colSpan={5} className="px-6 py-8 text-center text-muted-foreground">
-                  No orders found.
-                </td>
+                <th className="px-6 py-4 font-medium">Order ID</th>
+                <th className="px-6 py-4 font-medium">Customer</th>
+                <th className="px-6 py-4 font-medium">Total</th>
+                <th className="px-6 py-4 font-medium">Status</th>
+                <th className="px-6 py-4 font-medium text-right">Actions</th>
               </tr>
-            ) : (
-              filteredOrders.map((order) => (
-                <tr key={order.id} className="hover:bg-muted/50 transition-colors">
-                  <td className="px-6 py-4 font-mono text-sm text-muted-foreground">{order.id.slice(0, 8)}...</td>
-                  <td className="px-6 py-4">
-                    <div className="font-medium">{order.customerInfo.name}</div>
-                    <div className="text-xs text-muted-foreground">{order.customerInfo.contact}</div>
-                  </td>
-                  <td className="px-6 py-4 font-medium">GHC {order.totalPrice.toFixed(2)}</td>
-                  <td className="px-6 py-4">
-                    <select
-                      value={order.status}
-                      onChange={(e) => handleStatusChange(order.id, e.target.value as Order['status'])}
-                      className={`px-3 py-1 rounded-full text-sm font-bold border-none outline-none cursor-pointer
-                        ${order.status === 'Pending' ? 'bg-orange-500/10 text-orange-500' : ''}
-                        ${order.status === 'Paid' ? 'bg-blue-500/10 text-blue-500' : ''}
-                        ${order.status === 'Delivered' ? 'bg-green-500/10 text-green-500' : ''}
-                      `}
-                    >
-                      <option value="Pending">Pending</option>
-                      <option value="Paid">Paid</option>
-                      <option value="Delivered">Delivered</option>
-                    </select>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={() => exportPDF(order)}
-                      className="p-2 text-primary hover:bg-primary/10 rounded-md transition-colors inline-flex items-center gap-2 text-sm font-medium"
-                    >
-                      <Download size={16} /> Export PDF
-                    </button>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {filteredOrders.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-8 text-center text-muted-foreground">
+                    No orders found.
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                filteredOrders.map((order) => (
+                  <tr key={order.id} className="hover:bg-muted/50 transition-colors">
+                    <td className="px-6 py-4 font-mono text-sm text-muted-foreground">{order.id.slice(0, 8)}...</td>
+                    <td className="px-6 py-4">
+                      <div className="font-medium">{order.customerInfo.name}</div>
+                      <div className="text-xs text-muted-foreground">{order.customerInfo.contact}</div>
+                    </td>
+                    <td className="px-6 py-4 font-medium">GHC {order.totalPrice.toFixed(2)}</td>
+                    <td className="px-6 py-4">
+                      <select
+                        value={order.status}
+                        onChange={(e) => handleStatusChange(order.id, e.target.value as Order['status'])}
+                        className={`px-3 py-1 rounded-full text-sm font-bold border-none outline-none cursor-pointer
+                          ${order.status === 'Pending' ? 'bg-orange-500/10 text-orange-500' : ''}
+                          ${order.status === 'Paid' ? 'bg-blue-500/10 text-blue-500' : ''}
+                          ${order.status === 'Delivered' ? 'bg-green-500/10 text-green-500' : ''}
+                        `}
+                      >
+                        <option value="Pending">Pending</option>
+                        <option value="Paid">Paid</option>
+                        <option value="Delivered">Delivered</option>
+                      </select>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button
+                        onClick={() => exportPDF(order)}
+                        className="p-2 text-primary hover:bg-primary/10 rounded-md transition-colors inline-flex items-center gap-2 text-sm font-medium"
+                      >
+                        <Download size={16} /> Export PDF
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

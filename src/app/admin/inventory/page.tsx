@@ -379,9 +379,15 @@ export default function InventoryPage() {
         </div>
       </div>
 
+      {/* Horizontal Swipe Indicator for Mobile */}
+      <div className="md:hidden flex items-center justify-between text-[11px] text-muted-foreground px-1 font-semibold">
+        <span>👈 Swipe table sideways to view all columns 👉</span>
+      </div>
+
       {/* Inventory Table */}
       <div className="bg-card border border-border rounded-3xl overflow-hidden shadow-sm">
-        <table className="w-full text-left text-sm">
+        <div className="overflow-x-auto w-full">
+          <table className="w-full min-w-[780px] text-left text-sm">
           <thead className="bg-muted text-muted-foreground text-xs uppercase font-bold tracking-wider">
             <tr>
               <th className="px-6 py-4">Item & Photos</th>
@@ -481,6 +487,7 @@ export default function InventoryPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* --- BATCH UPLOAD QUEUE MODAL (UP TO 15 ITEMS) --- */}
