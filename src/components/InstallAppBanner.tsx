@@ -134,3 +134,4 @@ export default function InstallAppBanner() {
     </AnimatePresence>
   );
 }
+

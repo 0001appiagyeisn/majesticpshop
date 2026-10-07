@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
-import { ShoppingCart, Moon, Sun, Shield, Search } from "lucide-react";
+import { ShoppingCart, Moon, Sun, Search } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -117,15 +117,6 @@ export default function Navbar({ onOpenCart, searchQuery = "", onSearchChange }:
               )}
             </button>
           )}
-
-          {/* Quick link for mobile secret search / admin */}
-          <Link
-            href="/admin/login"
-            className="p-2.5 rounded-full hover:bg-muted text-muted-foreground hover:text-primary transition-colors md:hidden"
-            title="Admin Login"
-          >
-            <Shield size={20} />
-          </Link>
 
           {/* Cart Button */}
           <button

@@ -215,7 +215,7 @@ export default function ProductModal({ product, onClose, onOpenCart }: ProductMo
                   </span>
                   {product.unit && (
                     <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-depth bg-emerald-depth/15 dark:text-emerald-400 dark:bg-emerald-400/15 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                      <Users size={12} /> {product.unit} Unit
+                      <Users size={12} /> {product.unit === "General" ? "Club Wears" : `${product.unit} Unit`}
                     </span>
                   )}
                 </div>

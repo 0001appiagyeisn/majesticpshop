@@ -27,16 +27,16 @@
   }
 
   .dark {
-    /* Softer, luxurious dark palette (not pitch black) */
-    --background: #111815;
+    /* Soft, airy, modern dark palette - gentle, clear, and not gloomy */
+    --background: #1e2622;
     --foreground: #f8fafc;
-    --primary: #22c55e;
-    --primary-foreground: #052e16;
-    --card: #18221e;
+    --primary: #10b981;
+    --primary-foreground: #ffffff;
+    --card: #28342f;
     --card-foreground: #f8fafc;
-    --border: #263830;
-    --muted: #202d27;
-    --muted-foreground: #94a3b8;
+    --border: #3b4c44;
+    --muted: #303e38;
+    --muted-foreground: #a6b8b0;
   }
 }
 

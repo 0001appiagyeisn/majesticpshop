@@ -73,7 +73,7 @@ function ProductCard({
         {/* Club Unit Badge */}
         {product.unit && (
           <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-black/65 backdrop-blur text-white text-[10px] font-bold z-10 flex items-center gap-1 shadow">
-            <Users size={11} className="text-primary" /> {product.unit}
+            <Users size={11} className="text-primary" /> {product.unit === "General" ? "Club Wears" : product.unit}
           </span>
         )}
 
@@ -186,16 +186,22 @@ export default function Home() {
       if (!matchName && !matchUnit) return false;
     }
 
-    // 2. Category Filter
+    // 2. Unit Filter (checked first)
+    if (activeUnit !== "All") {
+      const pUnit = (p.unit || "").toLowerCase();
+      if (activeUnit === "Club Wears") {
+        // Matches Club Wears, legacy General, or apparel without specific sub-unit
+        if (pUnit !== "club wears" && pUnit !== "general" && pUnit !== "") return false;
+      } else {
+        if (pUnit !== activeUnit.toLowerCase()) return false;
+      }
+    }
+
+    // 3. Category Filter
     if (activeCategory !== "All") {
       const cat = categories.find((c) => c.id === p.categoryId);
       const catName = cat?.name?.toLowerCase() || "";
       if (catName !== activeCategory.toLowerCase()) return false;
-    }
-
-    // 3. Unit Filter
-    if (activeUnit !== "All") {
-      if (p.unit?.toLowerCase() !== activeUnit.toLowerCase()) return false;
     }
 
     return true;
@@ -297,7 +303,27 @@ export default function Home() {
             </span>
           </div>
 
-          {/* Granular Category Filters */}
+          {/* 1. Unit / Group Filter Pills (Positioned Above Categories) */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs hide-scrollbar">
+            <span className="text-muted-foreground font-bold uppercase text-[10px] flex items-center gap-1 flex-shrink-0">
+              <Users size={12} /> Unit / Group:
+            </span>
+            {["All", "Tiger", "Capricorn", "Chrysanthemum", "Club Wears"].map((unit) => (
+              <button
+                key={unit}
+                onClick={() => setActiveUnit(unit)}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all whitespace-nowrap ${
+                  activeUnit === unit
+                    ? "bg-primary text-primary-foreground border-primary shadow-sm scale-105"
+                    : "border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted"
+                }`}
+              >
+                {unit === "All" ? "All Items" : unit === "Club Wears" ? "Club Wears" : `${unit} Unit`}
+              </button>
+            ))}
+          </div>
+
+          {/* 2. Granular Category Filters (Positioned Under Units) */}
           <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
             {["All", "Shirts", "Hoodies", "Neckerchiefs & Slides", "Caps & Crests", "Tags & Pins", "Accessories"].map((catName) => (
               <button
@@ -305,7 +331,7 @@ export default function Home() {
                 onClick={() => setActiveCategory(catName)}
                 className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-extrabold transition-all whitespace-nowrap ${
                   activeCategory === catName
-                    ? "bg-primary text-primary-foreground shadow-md scale-105"
+                    ? "bg-emerald-depth text-white shadow-md scale-105"
                     : "bg-muted text-muted-foreground hover:bg-primary/20"
                 }`}
               >
@@ -322,33 +348,13 @@ export default function Home() {
                   onClick={() => setActiveCategory(c.name)}
                   className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-extrabold transition-all whitespace-nowrap ${
                     activeCategory === c.name
-                      ? "bg-primary text-primary-foreground shadow-md scale-105"
+                      ? "bg-emerald-depth text-white shadow-md scale-105"
                       : "bg-muted text-muted-foreground hover:bg-primary/20"
                   }`}
                 >
                   {c.name}
                 </button>
               ))}
-          </div>
-
-          {/* Unit / Group Filter Pills */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
-            <span className="text-muted-foreground font-bold uppercase text-[10px] flex items-center gap-1">
-              <Users size={12} /> Unit:
-            </span>
-            {["All", "Tiger", "Capricorn", "Chrysanthemum", "General"].map((unit) => (
-              <button
-                key={unit}
-                onClick={() => setActiveUnit(unit)}
-                className={`px-3 py-1 rounded-full text-xs font-bold border transition-all ${
-                  activeUnit === unit
-                    ? "bg-emerald-depth text-white border-emerald-depth shadow-sm"
-                    : "border-border bg-card text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {unit === "All" ? "All Units" : `${unit} Unit`}
-              </button>
-            ))}
           </div>
         </section>
 

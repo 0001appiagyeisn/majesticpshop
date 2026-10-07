@@ -3,7 +3,7 @@ export interface Category {
   name: string;
 }
 
-export type ClubUnit = "Tiger" | "Capricorn" | "Chrysanthemum" | "General";
+export type ClubUnit = "Tiger" | "Capricorn" | "Chrysanthemum" | "Club Wears" | "General";
 
 export interface Product {
   id: string;
@@ -11,7 +11,7 @@ export interface Product {
   description?: string;
   price: number;
   categoryId: string;
-  unit?: ClubUnit | string; // Club unit: Tiger, Capricorn, Chrysanthemum, or General
+  unit?: ClubUnit | string; // Club unit: Tiger, Capricorn, Chrysanthemum, or Club Wears
   imageUrls: string[]; // Supports up to 7 images
   requiresSize: boolean;
   requiresColor: boolean;

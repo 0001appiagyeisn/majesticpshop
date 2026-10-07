@@ -5,7 +5,7 @@ import { getProducts, addProduct, deleteProduct, updateProduct, getCategories, a
 import { Product, Category, ClubUnit } from "@/types";
 import { Plus, Edit2, Trash2, Image as ImageIcon, Sparkles, Loader2, X, Search, CheckCircle, Upload, Layers, Users } from "lucide-react";
 
-const CLUB_UNITS: ClubUnit[] = ["Tiger", "Capricorn", "Chrysanthemum", "General"];
+const CLUB_UNITS: ClubUnit[] = ["Tiger", "Capricorn", "Chrysanthemum", "Club Wears"];
 
 export default function InventoryPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -27,7 +27,7 @@ export default function InventoryPage() {
     description: "",
     price: 0,
     categoryId: "",
-    unit: "General" as ClubUnit,
+    unit: "Club Wears" as ClubUnit,
     imageUrls: [] as string[],
     requiresSize: false,
     requiresColor: false,
@@ -327,7 +327,7 @@ export default function InventoryPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black text-foreground tracking-tight">Inventory & Souvenirs</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">Manage club souvenirs, descriptions, unit themes (Tiger, Capricorn, Chrysanthemum & General), and AI auto-recognition</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Manage club souvenirs, descriptions, unit themes (Tiger, Capricorn, Chrysanthemum & Club Wears), and AI auto-recognition</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -439,7 +439,7 @@ export default function InventoryPage() {
                     </td>
                     <td className="px-6 py-4">
                       <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-muted text-foreground flex items-center gap-1 w-fit">
-                        <Users size={12} className="text-primary" /> {product.unit || "General"}
+                        <Users size={12} className="text-primary" /> {product.unit === "General" ? "Club Wears" : (product.unit || "Club Wears")}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-muted-foreground font-medium">
@@ -736,7 +736,7 @@ export default function InventoryPage() {
                       className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-border text-sm outline-none focus:border-primary font-bold"
                     >
                       {CLUB_UNITS.map((u) => (
-                        <option key={u} value={u}>{u} Unit</option>
+                        <option key={u} value={u}>{u === "Club Wears" ? "Club Wears" : `${u} Unit`}</option>
                       ))}
                     </select>
                   </div>

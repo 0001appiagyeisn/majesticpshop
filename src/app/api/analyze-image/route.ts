@@ -63,7 +63,7 @@ export async function POST(req: Request) {
       1. **Capricorn Unit**: Signified by a GOAT, HORNED CREATURE, RAM, or SEA-GOAT graphic/mascot printed or embroidered on the item! If you see a goat or horns, it is 100% CAPRICORN!
       2. **Tiger Unit**: Signified by a TIGER, TIGER STRIPES, TIGER HEAD, or FELINE graphic/mascot!
       3. **Chrysanthemum Unit**: Signified by a CHRYSANTHEMUM FLOWER or FLORAL emblem!
-      4. **General**: Signified by a PEACOCK, PEACHICK, PEACOCK FEATHERS, or standard club regalia/crest.
+      4. **Club Wears**: Signified by a PEACOCK, PEACHICK, PEACOCK FEATHERS, or standard club regalia/crest/apparel.
 
       ITEM TYPE RECOGNITION:
       - Hoodies / Pullovers / Sweaters -> Category: "Hoodies", Default price: 150 GHC
@@ -77,14 +77,14 @@ export async function POST(req: Request) {
       NAMING & DESCRIPTION CONVENTION:
       - If the item belongs to a specific unit (Capricorn, Tiger, or Chrysanthemum), include the unit in the name and description:
         Example name: "Club hoodie - Capricorn" or "Club neckerchief - Capricorn" or "Club hoodie - Tiger".
-        If General: "Majestic Peacock shirt" or "Peacock neckerchief".
+        If general club wear: "Majestic Peacock shirt" or "Peacock neckerchief".
       - Description: Write a clear sentence containing the item type and unit, e.g.:
         "Official club hoodie for Capricorn Unit, featuring the Capricorn goat mascot emblem."
 
       Return ONLY a pure raw JSON object with NO markdown backticks:
       {
         "name": "Product Name with Unit (e.g. Club hoodie - Capricorn)",
-        "unit": "Capricorn" | "Tiger" | "Chrysanthemum" | "General",
+        "unit": "Capricorn" | "Tiger" | "Chrysanthemum" | "Club Wears",
         "description": "Short description mentioning unit like: Club hoodie - Capricorn. Official regalia...",
         "category": "Shirts" | "Hoodies" | "Neckerchiefs & Slides" | "Caps & Crests" | "Tags & Pins" | "Accessories",
         "price": number,
@@ -137,6 +137,9 @@ export async function POST(req: Request) {
       .trim();
 
     const data = JSON.parse(cleaned);
+    if (data.unit === 'General') {
+      data.unit = 'Club Wears';
+    }
 
     if (secondaryImage) {
       data.secondaryImage = secondaryImage;

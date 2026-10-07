@@ -2,15 +2,16 @@
 
 import { useAuth } from "@/context/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { LayoutDashboard, Package, ShoppingBag, Tags, LogOut, ExternalLink } from "lucide-react";
+import { LayoutDashboard, Package, ShoppingBag, Tags, LogOut, ExternalLink, Menu, X } from "lucide-react";
 import { auth } from "@/lib/firebase";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && !user && pathname !== "/admin/login") {
@@ -43,9 +44,105 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   ];
 
   return (
-    <div className="flex h-screen bg-background text-foreground overflow-hidden">
-      {/* Sidebar */}
-      <aside className="w-64 border-r border-border bg-card flex flex-col justify-between">
+    <div className="flex flex-col md:flex-row h-screen bg-background text-foreground overflow-hidden">
+      {/* Mobile Top Header (Screens < md) */}
+      <div className="md:hidden flex items-center justify-between p-3.5 border-b border-border bg-card z-30 flex-shrink-0">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-full overflow-hidden border border-emerald-depth p-0.5 bg-white flex-shrink-0">
+            <img src="/images/logo1.jpeg" alt="Club Logo" className="w-full h-full object-contain" />
+          </div>
+          <div>
+            <h2 className="text-xs font-black text-foreground leading-tight">Majesty Peacock</h2>
+            <span className="text-[10px] font-bold text-botanical-green uppercase">Admin Portal</span>
+          </div>
+        </div>
+
+        <button
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="p-2 rounded-xl border border-border bg-background hover:bg-muted text-foreground transition-colors"
+          aria-label="Toggle Navigation Menu"
+        >
+          {isMobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
+        </button>
+      </div>
+
+      {/* Mobile Drawer (Overlay when opened) */}
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 z-50 md:hidden flex">
+          {/* Backdrop */}
+          <div
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+          />
+
+          {/* Drawer Sidebar */}
+          <aside className="relative w-72 max-w-[80vw] bg-card border-r border-border flex flex-col justify-between h-full z-10 shadow-2xl">
+            <div>
+              <div className="p-4 border-b border-border flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-full overflow-hidden border border-emerald-depth p-0.5 bg-white flex-shrink-0">
+                    <img src="/images/logo1.jpeg" alt="Club Logo" className="w-full h-full object-contain" />
+                  </div>
+                  <div>
+                    <h2 className="text-xs font-black text-foreground leading-tight">Majesty Peacock</h2>
+                    <span className="text-[10px] font-bold text-botanical-green uppercase">Admin Portal</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <nav className="p-3.5 space-y-1.5">
+                {navLinks.map((link) => {
+                  const Icon = link.icon;
+                  const isActive = pathname === link.href;
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                        isActive
+                          ? "bg-primary text-primary-foreground shadow"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      }`}
+                    >
+                      <Icon size={18} />
+                      {link.label}
+                    </Link>
+                  );
+                })}
+              </nav>
+            </div>
+
+            <div className="p-4 border-t border-border space-y-2">
+              <Link
+                href="/"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center justify-between px-3.5 py-2 rounded-lg text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              >
+                <span>View Storefront</span>
+                <ExternalLink size={14} />
+              </Link>
+
+              <button
+                onClick={handleLogout}
+                className="flex w-full items-center gap-2 px-3.5 py-2.5 rounded-lg text-xs font-bold text-red-500 hover:bg-red-500/10 transition-colors"
+              >
+                <LogOut size={16} />
+                Sign Out
+              </button>
+            </div>
+          </aside>
+        </div>
+      )}
+
+      {/* Persistent Desktop Sidebar (Screens >= md) */}
+      <aside className="hidden md:flex w-64 border-r border-border bg-card flex-col justify-between flex-shrink-0">
         <div>
           {/* Header with Club Crest */}
           <div className="p-5 border-b border-border flex items-center gap-3">
@@ -102,7 +199,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto p-6 md:p-8 bg-background">
+      <main className="flex-1 w-full overflow-y-auto p-4 sm:p-6 md:p-8 bg-background">
         {children}
       </main>
     </div>
