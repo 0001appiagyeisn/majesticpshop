@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
-import { ShoppingCart, Moon, Sun, Search } from "lucide-react";
+import { ShoppingCart, Moon, Sun, Search, X, ArrowDown } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -11,9 +11,10 @@ interface NavbarProps {
   onOpenCart?: () => void;
   searchQuery?: string;
   onSearchChange?: (val: string) => void;
+  onSearchSubmit?: (val: string) => void;
 }
 
-export default function Navbar({ onOpenCart, searchQuery = "", onSearchChange }: NavbarProps) {
+export default function Navbar({ onOpenCart, searchQuery = "", onSearchChange, onSearchSubmit }: NavbarProps) {
   const { cart } = useCart();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -48,9 +49,18 @@ export default function Navbar({ onOpenCart, searchQuery = "", onSearchChange }:
     const query = localQuery.trim().toLowerCase();
     if (query === "iamadminms" || query === "iamadminapp") {
       router.push("/admin/login");
-    } else if (!onSearchChange) {
-      router.push(`/?search=${encodeURIComponent(localQuery)}`);
+    } else {
+      if (onSearchSubmit) {
+        onSearchSubmit(localQuery);
+      } else if (!onSearchChange) {
+        router.push(`/?search=${encodeURIComponent(localQuery)}`);
+      }
     }
+  };
+
+  const handleClear = () => {
+    setLocalQuery("");
+    if (onSearchChange) onSearchChange("");
   };
 
   return (
@@ -91,14 +101,30 @@ export default function Navbar({ onOpenCart, searchQuery = "", onSearchChange }:
           {/* Desktop Live Search Bar with Secret Admin Access */}
           <div className="flex-1 max-w-md mx-2 hidden md:block">
             <form onSubmit={handleSearchSubmit} className="relative">
-              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <button
+                type="submit"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
+                title="Search"
+              >
+                <Search size={16} />
+              </button>
               <input
                 type="text"
                 placeholder="Search souvenir items... (e.g. shirt, hoodie)"
-                className="w-full pl-9 pr-4 py-2 text-sm rounded-full bg-background border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-muted-foreground/70"
+                className="w-full pl-9 pr-9 py-2 text-sm rounded-full bg-background border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-muted-foreground/70"
                 value={localQuery}
                 onChange={handleInputChange}
               />
+              {localQuery && (
+                <button
+                  type="button"
+                  onClick={handleClear}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
+                  title="Clear search"
+                >
+                  <X size={15} />
+                </button>
+              )}
             </form>
           </div>
 
@@ -140,15 +166,46 @@ export default function Navbar({ onOpenCart, searchQuery = "", onSearchChange }:
         {/* Mobile Live Search Bar (Always visible on mobile screens) */}
         <div className="pb-3 md:hidden">
           <form onSubmit={handleSearchSubmit} className="relative">
-            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <button
+              type="submit"
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
+              title="Search"
+            >
+              <Search size={15} />
+            </button>
             <input
               type="text"
               placeholder="Search souvenirs... (e.g. shirt, hoodie)"
-              className="w-full pl-9 pr-4 py-2 text-xs rounded-full bg-background border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-muted-foreground/70 shadow-sm"
+              className="w-full pl-9 pr-9 py-2 text-xs rounded-full bg-background border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-muted-foreground/70 shadow-sm"
               value={localQuery}
               onChange={handleInputChange}
             />
+            {localQuery && (
+              <button
+                type="button"
+                onClick={handleClear}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
+                title="Clear search"
+              >
+                <X size={14} />
+              </button>
+            )}
           </form>
+
+          {/* Quick jump to results on mobile when search is active */}
+          {localQuery.trim().length > 0 && (
+            <div className="flex items-center justify-between mt-1 px-2 text-[11px] font-bold text-primary animate-fadeIn">
+              <span className="truncate max-w-[200px]">Filter: &quot;{localQuery}&quot;</span>
+              <button
+                type="button"
+                onClick={() => onSearchSubmit && onSearchSubmit(localQuery)}
+                className="flex items-center gap-1 text-[11px] bg-primary/10 hover:bg-primary/20 text-primary px-2.5 py-0.5 rounded-full transition-all"
+              >
+                <span>View Results</span>
+                <ArrowDown size={12} />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </nav>

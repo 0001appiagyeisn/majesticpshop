@@ -35,10 +35,12 @@ export default function ProductModal({ product, onClose, onOpenCart }: ProductMo
     return () => clearInterval(interval);
   }, [product, selectedImageIndex]);
 
-  // Reset index when product changes
+  // Reset index and form options when product changes
   useEffect(() => {
     setSelectedImageIndex(0);
     setQuantity(1);
+    setSelectedSize("M");
+    setSelectedColor("Club Green");
   }, [product]);
 
   if (!product) return null;
@@ -213,11 +215,11 @@ export default function ProductModal({ product, onClose, onOpenCart }: ProductMo
                   <span className="text-[11px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-2.5 py-0.5 rounded-full">
                     Official Souvenir
                   </span>
-                  {product.unit && (
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-depth bg-emerald-depth/15 dark:text-emerald-400 dark:bg-emerald-400/15 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                      <Users size={12} /> {product.unit === "General" ? "Club Wears" : `${product.unit} Unit`}
-                    </span>
-                  )}
+                    {product.unit && (
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-depth bg-emerald-depth/15 dark:text-emerald-400 dark:bg-emerald-400/15 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                        <Users size={12} /> {product.unit === "General" || product.unit === "Club Wears" ? "Club Wears" : `${product.unit} Unit`}
+                      </span>
+                    )}
                 </div>
 
                 <h3 className="text-2xl font-black text-foreground mt-2 leading-tight">

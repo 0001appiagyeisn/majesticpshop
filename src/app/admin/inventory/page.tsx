@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { getProducts, addProduct, deleteProduct, updateProduct, getCategories, addCategory, uploadImageToFirebase } from "@/lib/services";
+import { matchProductSearch } from "@/lib/search";
 import { Product, Category, ClubUnit } from "@/types";
 import { Plus, Edit2, Trash2, Image as ImageIcon, Sparkles, Loader2, X, Search, CheckCircle, Upload, Layers, Users } from "lucide-react";
 
@@ -288,10 +289,9 @@ export default function InventoryPage() {
   };
 
   const filteredProducts = products.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.unit?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchesCat = categoryFilter === "All" || categories.find(c => c.id === p.categoryId)?.name === categoryFilter;
+    const cat = categories.find(c => c.id === p.categoryId);
+    const matchesSearch = matchProductSearch(p, searchQuery, cat?.name);
+    const matchesCat = categoryFilter === "All" || cat?.name === categoryFilter;
     return matchesSearch && matchesCat;
   });
 

@@ -5,9 +5,10 @@ import Navbar from "@/components/Navbar";
 import CartDrawer from "@/components/CartDrawer";
 import ProductModal from "@/components/ProductModal";
 import { getProducts, getCategories } from "@/lib/services";
+import { matchProductSearch } from "@/lib/search";
 import { Product, Category } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, ShoppingBag, ArrowRight, Users, ChevronRight, Layers } from "lucide-react";
+import { Sparkles, ShoppingBag, ArrowRight, Users, ChevronRight, Layers, X, Search } from "lucide-react";
 import Link from "next/link";
 
 // Product Card Component with Auto-Slide & Hover Photos
@@ -176,14 +177,45 @@ export default function Home() {
     fetchStorefront();
   }, []);
 
-  // Filter products by category, unit, and live search query
+  // Smoothly scroll down to the catalogue results section (offsetting sticky navbar)
+  const scrollToCatalogue = (behavior: ScrollBehavior = "smooth") => {
+    const el = document.getElementById("catalogue");
+    if (el) {
+      const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+      const navOffset = isMobile ? 120 : 85;
+      const elementPosition = el.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - navOffset;
+      window.scrollTo({
+        top: Math.max(0, offsetPosition),
+        behavior: behavior,
+      });
+    }
+  };
+
+  // On mobile/desktop, when user types a search query, gently scroll to results if they are at the top
+  useEffect(() => {
+    if (!searchQuery.trim()) return;
+    const timer = setTimeout(() => {
+      const el = document.getElementById("catalogue");
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        // If the catalogue top is more than 160px down from viewport top, glide to results
+        if (rect.top > 160) {
+          scrollToCatalogue("smooth");
+        }
+      }
+    }, 550);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Filter products by category, unit, and intelligent broad search query
   const filteredProducts = products.filter((p) => {
-    // 1. Search Query
+    // 1. Broad Smart Search Query (handles plurals, lemmas, categories, synonyms)
     if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      const matchName = p.name.toLowerCase().includes(q);
-      const matchUnit = p.unit?.toLowerCase().includes(q);
-      if (!matchName && !matchUnit) return false;
+      const cat = categories.find((c) => c.id === p.categoryId);
+      if (!matchProductSearch(p, searchQuery, cat?.name)) {
+        return false;
+      }
     }
 
     // 2. Unit Filter (checked first)
@@ -213,6 +245,7 @@ export default function Home() {
         onOpenCart={() => setIsCartOpen(true)}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        onSearchSubmit={() => scrollToCatalogue("smooth")}
       />
 
       {/* Hero Section with Official Club & Adventist Logos */}
@@ -358,6 +391,25 @@ export default function Home() {
           </div>
         </section>
 
+        {/* Active Search Feedback Banner */}
+        {searchQuery.trim() && (
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-2 p-3 sm:p-3.5 bg-primary/10 border border-primary/25 rounded-2xl animate-fadeIn">
+            <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-primary">
+              <Search size={16} />
+              <span>
+                Showing results for &ldquo;{searchQuery}&rdquo; ({filteredProducts.length} {filteredProducts.length === 1 ? "item" : "items"} found)
+              </span>
+            </div>
+            <button
+              onClick={() => setSearchQuery("")}
+              className="px-3 py-1 rounded-xl bg-background border border-primary/30 text-xs font-bold text-foreground hover:bg-muted transition-all flex items-center gap-1.5 shadow-sm"
+            >
+              <span>Clear Search</span>
+              <X size={14} />
+            </button>
+          </div>
+        )}
+
         {/* Products Grid */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 space-y-4">
@@ -371,9 +423,19 @@ export default function Home() {
             </div>
             <h3 className="text-lg font-bold">No Items Found</h3>
             <p className="text-xs text-muted-foreground">
-              {searchQuery ? `No souvenirs match "${searchQuery}".` : "No products available in this category/unit yet."}
+              {searchQuery ? `No souvenirs match "${searchQuery}". Try searching for something broader like "hoodies", "shirts", "tags", or "peacock".` : "No products available in this category/unit yet."}
             </p>
-            {products.length === 0 && (
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:opacity-90 transition-all shadow"
+              >
+                <span>Clear Search & View All</span>
+                <X size={14} />
+              </button>
+            )}
+            {products.length === 0 && !searchQuery && (
               <Link
                 href="/admin/inventory"
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:opacity-90 shadow"
