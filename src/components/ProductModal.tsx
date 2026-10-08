@@ -12,30 +12,10 @@ interface ProductModalProps {
   onOpenCart: () => void;
 }
 
+import { getColorHex } from "@/lib/colors";
+
 const AVAILABLE_SIZES = ["S", "M", "L", "XL", "XXL", "3XL"];
 const DEFAULT_COLORS = ["Club Green", "Black", "White", "Gold", "Navy Blue"];
-
-const COLOR_HEX_MAP: Record<string, string> = {
-  "club green": "#1B4D3E",
-  "black": "#111111",
-  "white": "#FFFFFF",
-  "gold": "#D4AF37",
-  "navy": "#001F3F",
-  "navy blue": "#001F3F",
-  "royal blue": "#4169E1",
-  "red": "#C53030",
-  "forest green": "#22543D",
-  "yellow": "#ECC94B",
-  "grey": "#718096",
-  "gray": "#718096",
-  "khaki": "#A07855",
-  "khaki / brown": "#A07855",
-  "brown": "#7B3F00",
-  "orange": "#DD6B20",
-  "maroon": "#800000",
-  "emerald": "#50C878",
-  "purple": "#800080",
-};
 
 export default function ProductModal({ product, onClose, onOpenCart }: ProductModalProps) {
   const { addToCart } = useCart();
@@ -306,7 +286,7 @@ export default function ProductModal({ product, onClose, onOpenCart }: ProductMo
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {(product.availableColors && product.availableColors.length > 0 ? product.availableColors : DEFAULT_COLORS).map((col) => {
-                      const hex = COLOR_HEX_MAP[col.toLowerCase()] || "#1B4D3E";
+                      const hex = getColorHex(col);
                       const isSelected = selectedColor === col;
                       return (
                         <button

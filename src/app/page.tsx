@@ -10,6 +10,7 @@ import { Product, Category } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, ShoppingBag, ArrowRight, Users, ChevronRight, Layers, X, Search } from "lucide-react";
 import Link from "next/link";
+import { getColorHex } from "@/lib/colors";
 
 // Product Card Component with Auto-Slide & Hover Photos
 function ProductCard({
@@ -117,11 +118,30 @@ function ProductCard({
             </p>
           )}
 
-          <p className="text-[11px] text-muted-foreground/80 mt-1 line-clamp-1">
-            {product.requiresSize && "Sizes: S to 3XL"}
-            {product.requiresSize && product.requiresColor && " • "}
-            {product.requiresColor && (product.availableColors && product.availableColors.length > 0 ? `${product.availableColors.length} colors available` : "Colors available")}
-          </p>
+          <div className="text-[11px] text-muted-foreground/80 mt-1 flex items-center gap-1.5 flex-wrap">
+            {product.requiresSize && <span>Sizes: S to 3XL</span>}
+            {product.requiresSize && product.requiresColor && <span>•</span>}
+            {product.requiresColor && (
+              <span className="inline-flex items-center gap-1">
+                <span>{product.availableColors && product.availableColors.length > 0 ? `${product.availableColors.length} colors` : "Colors available"}</span>
+                {product.availableColors && product.availableColors.length > 0 && (
+                  <span className="inline-flex items-center gap-0.5">
+                    {product.availableColors.slice(0, 4).map((c) => (
+                      <span
+                        key={c}
+                        className="w-2 h-2 rounded-full border border-black/20 inline-block"
+                        style={{ backgroundColor: getColorHex(c) }}
+                        title={c}
+                      />
+                    ))}
+                    {product.availableColors.length > 4 && (
+                      <span className="text-[9px] font-bold">+{product.availableColors.length - 4}</span>
+                    )}
+                  </span>
+                )}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Pricing & Big Action Button */}

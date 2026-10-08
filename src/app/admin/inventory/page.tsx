@@ -8,20 +8,7 @@ import { Plus, Edit2, Trash2, Image as ImageIcon, Sparkles, Loader2, X, Search, 
 
 const CLUB_UNITS: ClubUnit[] = ["Tiger", "Capricorn", "Chrysanthemum", "Club Wears"];
 
-export const PRESET_COLORS = [
-  { name: "Club Green", hex: "#1B4D3E" },
-  { name: "Black", hex: "#111111" },
-  { name: "White", hex: "#FFFFFF" },
-  { name: "Gold", hex: "#D4AF37" },
-  { name: "Navy Blue", hex: "#001F3F" },
-  { name: "Royal Blue", hex: "#4169E1" },
-  { name: "Red", hex: "#C53030" },
-  { name: "Forest Green", hex: "#22543D" },
-  { name: "Yellow", hex: "#ECC94B" },
-  { name: "Grey", hex: "#718096" },
-  { name: "Khaki / Brown", hex: "#A07855" },
-  { name: "Orange", hex: "#DD6B20" },
-];
+import { PRESET_COLORS, getColorHex, formatColorName } from "@/lib/colors";
 
 const formatImageUrl = (img?: string) => {
   if (!img) return "";
@@ -121,15 +108,36 @@ export default function InventoryPage() {
   };
 
   const handleAddCustomColor = () => {
-    const trimmed = customColorInput.trim();
-    if (!trimmed) return;
-    if (!formData.availableColors.some(c => c.toLowerCase() === trimmed.toLowerCase())) {
+    const raw = customColorInput.trim();
+    if (!raw) return;
+    const parts = raw.split(/[,/]+/).map(p => p.trim()).filter(Boolean);
+    const newColors: string[] = [];
+    parts.forEach(part => {
+      const formatted = formatColorName(part);
+      if (
+        formatted &&
+        !formData.availableColors.some(c => c.toLowerCase() === formatted.toLowerCase()) &&
+        !newColors.some(c => c.toLowerCase() === formatted.toLowerCase())
+      ) {
+        newColors.push(formatted);
+      }
+    });
+    if (newColors.length > 0) {
       setFormData(prev => ({
         ...prev,
-        availableColors: [...prev.availableColors, trimmed]
+        availableColors: [...prev.availableColors, ...newColors]
       }));
     }
     setCustomColorInput("");
+  };
+
+  const handleRemoveColor = (colorToRemove: string) => {
+    setFormData(prev => ({
+      ...prev,
+      availableColors: prev.availableColors.filter(
+        c => c.toLowerCase() !== colorToRemove.toLowerCase()
+      )
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -456,10 +464,27 @@ export default function InventoryPage() {
                         {product.description && (
                           <p className="text-xs text-muted-foreground line-clamp-1 italic">{product.description}</p>
                         )}
-                        <div className="text-[11px] text-muted-foreground">
-                          {product.requiresSize && "Sizes: S-3XL"}
-                          {product.requiresSize && product.requiresColor && " • "}
-                          {product.requiresColor && "Colors available"}
+                        <div className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap mt-0.5">
+                          {product.requiresSize && <span>Sizes: S-3XL</span>}
+                          {product.requiresSize && product.requiresColor && <span>•</span>}
+                          {product.requiresColor && (
+                            <span className="inline-flex items-center gap-1">
+                              <span>Colors ({product.availableColors?.length || 0}):</span>
+                              <span className="inline-flex items-center gap-0.5">
+                                {(product.availableColors || []).slice(0, 5).map((c) => (
+                                  <span
+                                    key={c}
+                                    className="w-2.5 h-2.5 rounded-full border border-black/20 inline-block"
+                                    style={{ backgroundColor: getColorHex(c) }}
+                                    title={c}
+                                  />
+                                ))}
+                                {(product.availableColors?.length || 0) > 5 && (
+                                  <span className="text-[10px] font-bold">+{product.availableColors!.length - 5}</span>
+                                )}
+                              </span>
+                            </span>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -769,96 +794,141 @@ export default function InventoryPage() {
 
                   {/* Color Presets & Custom Color Selector for Admins */}
                   {formData.requiresColor && (
-                    <div className="pt-2 border-t border-border/80 space-y-2.5">
-                      <div className="flex items-center justify-between flex-wrap gap-1">
-                        <span className="font-extrabold uppercase text-[10px] text-muted-foreground tracking-wider">
-                          Available Colors for Buyers ({formData.availableColors.length} selected):
-                        </span>
+                    <div className="pt-2 border-t border-border/80 space-y-3">
+                      {/* Active Colors for Buyers (Tray with delete X buttons) */}
+                      <div className="p-3 rounded-2xl bg-muted/40 border border-border space-y-2">
+                        <div className="flex items-center justify-between flex-wrap gap-1">
+                          <span className="font-extrabold uppercase text-[10px] text-foreground tracking-wider flex items-center gap-1.5">
+                            <CheckCircle size={13} className="text-primary" />
+                            Active Colors for Buyers ({formData.availableColors.length} selected):
+                          </span>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setFormData({ ...formData, availableColors: ["Club Green", "Black", "White", "Gold", "Navy Blue"] })}
+                              className="text-[10px] text-primary hover:underline font-bold"
+                            >
+                              Default 5
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setFormData({ ...formData, availableColors: PRESET_COLORS.map(c => c.name) })}
+                              className="text-[10px] text-primary hover:underline font-bold"
+                            >
+                              Select All
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setFormData({ ...formData, availableColors: [] })}
+                              className="text-[10px] text-red-500 hover:underline font-bold"
+                            >
+                              Clear All
+                            </button>
+                          </div>
+                        </div>
+
+                        {formData.availableColors.length === 0 ? (
+                          <p className="text-xs text-muted-foreground italic py-1">
+                            No colors selected yet. Choose from presets below or type custom colors.
+                          </p>
+                        ) : (
+                          <div className="flex flex-wrap gap-1.5 pt-1">
+                            {formData.availableColors.map((colorName) => {
+                              const hex = getColorHex(colorName);
+                              return (
+                                <span
+                                  key={colorName}
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-background border border-primary/40 text-foreground text-xs font-bold shadow-sm"
+                                >
+                                  <span
+                                    className="w-3.5 h-3.5 rounded-full border border-black/25 flex-shrink-0"
+                                    style={{ backgroundColor: hex }}
+                                  />
+                                  <span>{colorName}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveColor(colorName)}
+                                    className="p-0.5 rounded-full hover:bg-muted text-muted-foreground hover:text-red-500 transition-colors ml-0.5"
+                                    title={`Remove ${colorName}`}
+                                  >
+                                    <X size={12} />
+                                  </button>
+                                </span>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Add Custom Color Input */}
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
+                          Add Custom Color (e.g. Wine, Blue, Burgundy, Teal)
+                        </label>
                         <div className="flex gap-2">
+                          <input
+                            type="text"
+                            placeholder="Type color name (e.g. Wine, Blue, Maroon)..."
+                            value={customColorInput}
+                            onChange={(e) => setCustomColorInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                handleAddCustomColor();
+                              }
+                            }}
+                            className="flex-1 px-3 py-2 rounded-xl bg-background border border-border text-xs outline-none focus:border-primary text-foreground"
+                          />
                           <button
                             type="button"
-                            onClick={() => setFormData({ ...formData, availableColors: ["Club Green", "Black", "White", "Gold", "Navy Blue"] })}
-                            className="text-[10px] text-primary hover:underline font-bold"
+                            onClick={handleAddCustomColor}
+                            className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:opacity-90 transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
                           >
-                            Default 5
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setFormData({ ...formData, availableColors: PRESET_COLORS.map(c => c.name) })}
-                            className="text-[10px] text-primary hover:underline font-bold"
-                          >
-                            Select All
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setFormData({ ...formData, availableColors: [] })}
-                            className="text-[10px] text-red-500 hover:underline font-bold"
-                          >
-                            Clear
+                            <Plus size={14} /> Add Color
                           </button>
                         </div>
                       </div>
 
                       {/* Clickable Preset Color Chips */}
-                      <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-1.5 bg-background/50 rounded-xl border border-border">
-                        {PRESET_COLORS.map((preset) => {
-                          const isSelected = formData.availableColors.includes(preset.name);
-                          return (
-                            <button
-                              key={preset.name}
-                              type="button"
-                              onClick={() => {
-                                if (isSelected) {
-                                  setFormData({
-                                    ...formData,
-                                    availableColors: formData.availableColors.filter(c => c !== preset.name)
-                                  });
-                                } else {
-                                  setFormData({
-                                    ...formData,
-                                    availableColors: [...formData.availableColors, preset.name]
-                                  });
-                                }
-                              }}
-                              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 ${
-                                isSelected
-                                  ? "bg-primary text-primary-foreground border-primary shadow-sm scale-[1.02]"
-                                  : "bg-card border-border text-foreground hover:bg-muted"
-                              }`}
-                            >
-                              <span
-                                className="w-3.5 h-3.5 rounded-full border border-black/25 inline-block flex-shrink-0"
-                                style={{ backgroundColor: preset.hex }}
-                              />
-                              <span>{preset.name}</span>
-                              {isSelected && <CheckCircle size={12} />}
-                            </button>
-                          );
-                        })}
-                      </div>
-
-                      {/* Add Custom Color Input */}
-                      <div className="flex gap-2 pt-1">
-                        <input
-                          type="text"
-                          placeholder="Add custom color name (e.g. Maroon, Emerald)..."
-                          value={customColorInput}
-                          onChange={(e) => setCustomColorInput(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              e.preventDefault();
-                              handleAddCustomColor();
-                            }
-                          }}
-                          className="flex-1 px-3 py-1.5 rounded-xl bg-background border border-border text-xs outline-none focus:border-primary"
-                        />
-                        <button
-                          type="button"
-                          onClick={handleAddCustomColor}
-                          className="px-3.5 py-1.5 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:opacity-90 transition-all flex items-center gap-1"
-                        >
-                          <Plus size={13} /> Add Color
-                        </button>
+                      <div className="space-y-1.5">
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
+                          Click to toggle popular presets:
+                        </span>
+                        <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-1.5 bg-background/50 rounded-xl border border-border">
+                          {PRESET_COLORS.map((preset) => {
+                            const isSelected = formData.availableColors.some(
+                              c => c.toLowerCase() === preset.name.toLowerCase()
+                            );
+                            return (
+                              <button
+                                key={preset.name}
+                                type="button"
+                                onClick={() => {
+                                  if (isSelected) {
+                                    handleRemoveColor(preset.name);
+                                  } else {
+                                    setFormData(prev => ({
+                                      ...prev,
+                                      availableColors: [...prev.availableColors, preset.name]
+                                    }));
+                                  }
+                                }}
+                                className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 ${
+                                  isSelected
+                                    ? "bg-primary text-primary-foreground border-primary shadow-sm scale-[1.02]"
+                                    : "bg-card border-border text-foreground hover:bg-muted"
+                                }`}
+                              >
+                                <span
+                                  className="w-3.5 h-3.5 rounded-full border border-black/25 inline-block flex-shrink-0"
+                                  style={{ backgroundColor: preset.hex }}
+                                />
+                                <span>{preset.name}</span>
+                                {isSelected && <CheckCircle size={12} />}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
                   )}
