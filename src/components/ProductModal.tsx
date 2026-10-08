@@ -13,7 +13,29 @@ interface ProductModalProps {
 }
 
 const AVAILABLE_SIZES = ["S", "M", "L", "XL", "XXL", "3XL"];
-const AVAILABLE_COLORS = ["Club Green", "Black", "White", "Gold", "Navy"];
+const DEFAULT_COLORS = ["Club Green", "Black", "White", "Gold", "Navy Blue"];
+
+const COLOR_HEX_MAP: Record<string, string> = {
+  "club green": "#1B4D3E",
+  "black": "#111111",
+  "white": "#FFFFFF",
+  "gold": "#D4AF37",
+  "navy": "#001F3F",
+  "navy blue": "#001F3F",
+  "royal blue": "#4169E1",
+  "red": "#C53030",
+  "forest green": "#22543D",
+  "yellow": "#ECC94B",
+  "grey": "#718096",
+  "gray": "#718096",
+  "khaki": "#A07855",
+  "khaki / brown": "#A07855",
+  "brown": "#7B3F00",
+  "orange": "#DD6B20",
+  "maroon": "#800000",
+  "emerald": "#50C878",
+  "purple": "#800080",
+};
 
 export default function ProductModal({ product, onClose, onOpenCart }: ProductModalProps) {
   const { addToCart } = useCart();
@@ -40,7 +62,10 @@ export default function ProductModal({ product, onClose, onOpenCart }: ProductMo
     setSelectedImageIndex(0);
     setQuantity(1);
     setSelectedSize("M");
-    setSelectedColor("Club Green");
+    const initialColor = product?.availableColors && product.availableColors.length > 0
+      ? product.availableColors[0]
+      : "Club Green";
+    setSelectedColor(initialColor);
   }, [product]);
 
   if (!product) return null;
@@ -271,23 +296,37 @@ export default function ProductModal({ product, onClose, onOpenCart }: ProductMo
               {/* Color selection */}
               {product.requiresColor && (
                 <div>
-                  <label className="block text-xs font-bold uppercase text-muted-foreground mb-2">
-                    Select Color
-                  </label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-bold uppercase text-muted-foreground">
+                      Select Color
+                    </label>
+                    <span className="text-xs font-bold text-primary">
+                      {selectedColor}
+                    </span>
+                  </div>
                   <div className="flex flex-wrap gap-2">
-                    {AVAILABLE_COLORS.map((col) => (
-                      <button
-                        key={col}
-                        onClick={() => setSelectedColor(col)}
-                        className={`px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all ${
-                          selectedColor === col
-                            ? "bg-emerald-depth text-white border-emerald-depth shadow-md scale-105"
-                            : "border-border hover:border-primary/50 text-foreground bg-card"
-                        }`}
-                      >
-                        {col}
-                      </button>
-                    ))}
+                    {(product.availableColors && product.availableColors.length > 0 ? product.availableColors : DEFAULT_COLORS).map((col) => {
+                      const hex = COLOR_HEX_MAP[col.toLowerCase()] || "#1B4D3E";
+                      const isSelected = selectedColor === col;
+                      return (
+                        <button
+                          key={col}
+                          type="button"
+                          onClick={() => setSelectedColor(col)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-2 ${
+                            isSelected
+                              ? "bg-primary text-primary-foreground border-primary shadow-md scale-105"
+                              : "border-border hover:border-primary/50 text-foreground bg-card"
+                          }`}
+                        >
+                          <span
+                            className="w-3.5 h-3.5 rounded-full border border-black/25 inline-block flex-shrink-0"
+                            style={{ backgroundColor: hex }}
+                          />
+                          <span>{col}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}

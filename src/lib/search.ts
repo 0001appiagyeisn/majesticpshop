@@ -38,7 +38,7 @@ const SYNONYMS: Record<string, string[]> = {
   tag: ["tags", "patch", "patches", "badge", "badges", "sleeve", "shoulder", "sewon", "sew-on", "sew", "label"],
   patch: ["tag", "tags", "badge", "badges", "sewon", "sew-on", "shoulder", "sleeve"],
   pin: ["pins", "badge", "badges", "lapel", "enamel", "brooch"],
-  cap: ["caps", "hat", "hats", "beret", "berets", "baseball"],
+  cap: ["caps", "hat", "hats", "beret", "berets", "headwear"],
   beret: ["cap", "caps", "hat", "hats"],
   crest: ["crests", "emblem", "logo", "insignia", "patch"],
   neckerchief: ["neckerchiefs", "scarf", "scarves", "tie", "slide", "woggle"],

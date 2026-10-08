@@ -120,7 +120,7 @@ function ProductCard({
           <p className="text-[11px] text-muted-foreground/80 mt-1 line-clamp-1">
             {product.requiresSize && "Sizes: S to 3XL"}
             {product.requiresSize && product.requiresColor && " • "}
-            {product.requiresColor && "Colors available"}
+            {product.requiresColor && (product.availableColors && product.availableColors.length > 0 ? `${product.availableColors.length} colors available` : "Colors available")}
           </p>
         </div>
 

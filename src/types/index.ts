@@ -12,9 +12,10 @@ export interface Product {
   price: number;
   categoryId: string;
   unit?: ClubUnit | string; // Club unit: Tiger, Capricorn, Chrysanthemum, or Club Wears
-  imageUrls: string[]; // Supports up to 7 images
+  imageUrls: string[]; // Multiple photos (first photo is main)
   requiresSize: boolean;
   requiresColor: boolean;
+  availableColors?: string[]; // Colors chosen by admin for buyers to pick
   stockQuantity: number;
   createdAt: Date | any;
 }

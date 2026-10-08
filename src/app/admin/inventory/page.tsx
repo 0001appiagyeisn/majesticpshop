@@ -8,6 +8,21 @@ import { Plus, Edit2, Trash2, Image as ImageIcon, Sparkles, Loader2, X, Search, 
 
 const CLUB_UNITS: ClubUnit[] = ["Tiger", "Capricorn", "Chrysanthemum", "Club Wears"];
 
+export const PRESET_COLORS = [
+  { name: "Club Green", hex: "#1B4D3E" },
+  { name: "Black", hex: "#111111" },
+  { name: "White", hex: "#FFFFFF" },
+  { name: "Gold", hex: "#D4AF37" },
+  { name: "Navy Blue", hex: "#001F3F" },
+  { name: "Royal Blue", hex: "#4169E1" },
+  { name: "Red", hex: "#C53030" },
+  { name: "Forest Green", hex: "#22543D" },
+  { name: "Yellow", hex: "#ECC94B" },
+  { name: "Grey", hex: "#718096" },
+  { name: "Khaki / Brown", hex: "#A07855" },
+  { name: "Orange", hex: "#DD6B20" },
+];
+
 const formatImageUrl = (img?: string) => {
   if (!img) return "";
   if (img.startsWith("http://") || img.startsWith("https://") || img.startsWith("data:") || img.startsWith("/")) {
@@ -28,6 +43,7 @@ export default function InventoryPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [analyzingImage, setAnalyzingImage] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [customColorInput, setCustomColorInput] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
@@ -39,6 +55,7 @@ export default function InventoryPage() {
     imageUrls: [] as string[],
     requiresSize: false,
     requiresColor: false,
+    availableColors: [] as string[],
     stockQuantity: 15,
   });
 
@@ -70,6 +87,7 @@ export default function InventoryPage() {
   }, []);
 
   const handleOpenModal = (product?: Product) => {
+    setCustomColorInput("");
     if (product) {
       setEditingId(product.id);
       setFormData({
@@ -77,10 +95,11 @@ export default function InventoryPage() {
         description: product.description || "",
         price: product.price,
         categoryId: product.categoryId,
-        unit: (product.unit as ClubUnit) || "General",
+        unit: (product.unit as ClubUnit) || "Club Wears",
         imageUrls: product.imageUrls || [],
         requiresSize: product.requiresSize,
         requiresColor: product.requiresColor,
+        availableColors: product.availableColors || (product.requiresColor ? ["Club Green", "Black", "White", "Gold", "Navy Blue"] : []),
         stockQuantity: product.stockQuantity,
       });
     } else {
@@ -90,14 +109,27 @@ export default function InventoryPage() {
         description: "",
         price: 0,
         categoryId: categories[0]?.id || "",
-        unit: "General",
+        unit: "Club Wears",
         imageUrls: [],
         requiresSize: false,
         requiresColor: false,
+        availableColors: ["Club Green", "Black", "White", "Gold", "Navy Blue"],
         stockQuantity: 15,
       });
     }
     setIsModalOpen(true);
+  };
+
+  const handleAddCustomColor = () => {
+    const trimmed = customColorInput.trim();
+    if (!trimmed) return;
+    if (!formData.availableColors.some(c => c.toLowerCase() === trimmed.toLowerCase())) {
+      setFormData(prev => ({
+        ...prev,
+        availableColors: [...prev.availableColors, trimmed]
+      }));
+    }
+    setCustomColorInput("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -123,46 +155,50 @@ export default function InventoryPage() {
     }
   };
 
-  // Upload local file from computer
+  // Upload local files from computer: supports multiple selection, first file is main, NO photo limit!
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
     setUploadingFile(true);
     try {
-      const downloadUrl = await uploadImageToFirebase(file);
-      await handleSelectImage(downloadUrl);
+      const uploadedUrls: string[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const downloadUrl = await uploadImageToFirebase(files[i]);
+        uploadedUrls.push(downloadUrl);
+      }
+
+      if (uploadedUrls.length > 0) {
+        await handleAddMultipleImages(uploadedUrls);
+      }
     } catch (err: any) {
       console.error("File upload failed", err);
-      alert(`Failed to upload image: ${err?.message || "Storage error"}`);
+      alert(`Failed to upload images: ${err?.message || "Storage error"}`);
     } finally {
       setUploadingFile(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
-  const handleSelectImage = async (imageName: string) => {
-    if (formData.imageUrls.includes(imageName)) return;
-
-    let updatedImages = [...formData.imageUrls, imageName].slice(0, 7);
+  const handleAddMultipleImages = async (newUrls: string[]) => {
+    const isFirstUpload = formData.imageUrls.length === 0;
+    // Append all photos (no limit) - the first photo in the array remains or becomes the main photo
+    const updatedImages = [...formData.imageUrls, ...newUrls];
     setFormData(prev => ({ ...prev, imageUrls: updatedImages }));
 
-    // Run AI if product name is empty or it's the primary image
-    if (formData.name === "" || formData.imageUrls.length === 0) {
+    // Run AI analysis on the primary image (the first file) if product name is empty
+    if (isFirstUpload && newUrls.length > 0 && formData.name === "") {
+      const mainImage = newUrls[0];
       setAnalyzingImage(true);
       try {
         const res = await fetch('/api/analyze-image', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ imageName })
+          body: JSON.stringify({ imageName: mainImage })
         });
         const aiData = await res.json();
 
         if (aiData.name) {
-          if (aiData.secondaryImage && !updatedImages.includes(aiData.secondaryImage)) {
-            updatedImages = [...updatedImages, aiData.secondaryImage].slice(0, 7);
-          }
-
           let catId = categories.find(c => c.name.toLowerCase() === aiData.category?.toLowerCase())?.id;
           if (!catId && aiData.category) {
             catId = await addCategory({ name: aiData.category });
@@ -179,7 +215,7 @@ export default function InventoryPage() {
             unit: (aiData.unit as ClubUnit) || prev.unit,
             requiresSize: aiData.requiresSize ?? prev.requiresSize,
             requiresColor: aiData.requiresColor ?? prev.requiresColor,
-            imageUrls: updatedImages,
+            availableColors: aiData.availableColors || (aiData.requiresColor ? ["Club Green", "Black", "White", "Gold", "Navy Blue"] : prev.availableColors),
           }));
         }
       } catch (err) {
@@ -188,6 +224,13 @@ export default function InventoryPage() {
         setAnalyzingImage(false);
       }
     }
+  };
+
+  const setAsMainImage = (img: string) => {
+    setFormData(prev => ({
+      ...prev,
+      imageUrls: [img, ...prev.imageUrls.filter(i => i !== img)]
+    }));
   };
 
   const removeImage = (img: string) => {
@@ -271,6 +314,7 @@ export default function InventoryPage() {
             imageUrls: imagesToAdd,
             requiresSize: aiData.requiresSize || false,
             requiresColor: aiData.requiresColor || false,
+            availableColors: aiData.availableColors || (aiData.requiresColor ? ["Club Green", "Black", "White", "Gold", "Navy Blue"] : []),
             stockQuantity: 20,
           });
           successCount++;
@@ -692,25 +736,132 @@ export default function InventoryPage() {
                   </div>
                 </div>
 
-                <div className="flex gap-4 p-3.5 bg-muted/40 rounded-2xl border border-border text-xs">
-                  <label className="flex items-center gap-2 cursor-pointer font-bold">
-                    <input
-                      type="checkbox"
-                      checked={formData.requiresSize}
-                      onChange={(e) => setFormData({ ...formData, requiresSize: e.target.checked })}
-                      className="w-4 h-4 rounded text-primary"
-                    />
-                    Requires Size (Clothes/Shirts/Hoodies)
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer font-bold">
-                    <input
-                      type="checkbox"
-                      checked={formData.requiresColor}
-                      onChange={(e) => setFormData({ ...formData, requiresColor: e.target.checked })}
-                      className="w-4 h-4 rounded text-primary"
-                    />
-                    Requires Color
-                  </label>
+                <div className="space-y-3 p-3.5 bg-muted/40 rounded-2xl border border-border text-xs">
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer font-bold">
+                      <input
+                        type="checkbox"
+                        checked={formData.requiresSize}
+                        onChange={(e) => setFormData({ ...formData, requiresSize: e.target.checked })}
+                        className="w-4 h-4 rounded text-primary"
+                      />
+                      Requires Size (Clothes/Shirts/Hoodies)
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer font-bold">
+                      <input
+                        type="checkbox"
+                        checked={formData.requiresColor}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setFormData({
+                            ...formData,
+                            requiresColor: checked,
+                            availableColors: checked && (!formData.availableColors || formData.availableColors.length === 0)
+                              ? ["Club Green", "Black", "White", "Gold", "Navy Blue"]
+                              : formData.availableColors
+                          });
+                        }}
+                        className="w-4 h-4 rounded text-primary"
+                      />
+                      Requires Color (Caps, Shirts, Hoodies, etc.)
+                    </label>
+                  </div>
+
+                  {/* Color Presets & Custom Color Selector for Admins */}
+                  {formData.requiresColor && (
+                    <div className="pt-2 border-t border-border/80 space-y-2.5">
+                      <div className="flex items-center justify-between flex-wrap gap-1">
+                        <span className="font-extrabold uppercase text-[10px] text-muted-foreground tracking-wider">
+                          Available Colors for Buyers ({formData.availableColors.length} selected):
+                        </span>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setFormData({ ...formData, availableColors: ["Club Green", "Black", "White", "Gold", "Navy Blue"] })}
+                            className="text-[10px] text-primary hover:underline font-bold"
+                          >
+                            Default 5
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFormData({ ...formData, availableColors: PRESET_COLORS.map(c => c.name) })}
+                            className="text-[10px] text-primary hover:underline font-bold"
+                          >
+                            Select All
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFormData({ ...formData, availableColors: [] })}
+                            className="text-[10px] text-red-500 hover:underline font-bold"
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Clickable Preset Color Chips */}
+                      <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-1.5 bg-background/50 rounded-xl border border-border">
+                        {PRESET_COLORS.map((preset) => {
+                          const isSelected = formData.availableColors.includes(preset.name);
+                          return (
+                            <button
+                              key={preset.name}
+                              type="button"
+                              onClick={() => {
+                                if (isSelected) {
+                                  setFormData({
+                                    ...formData,
+                                    availableColors: formData.availableColors.filter(c => c !== preset.name)
+                                  });
+                                } else {
+                                  setFormData({
+                                    ...formData,
+                                    availableColors: [...formData.availableColors, preset.name]
+                                  });
+                                }
+                              }}
+                              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 ${
+                                isSelected
+                                  ? "bg-primary text-primary-foreground border-primary shadow-sm scale-[1.02]"
+                                  : "bg-card border-border text-foreground hover:bg-muted"
+                              }`}
+                            >
+                              <span
+                                className="w-3.5 h-3.5 rounded-full border border-black/25 inline-block flex-shrink-0"
+                                style={{ backgroundColor: preset.hex }}
+                              />
+                              <span>{preset.name}</span>
+                              {isSelected && <CheckCircle size={12} />}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Add Custom Color Input */}
+                      <div className="flex gap-2 pt-1">
+                        <input
+                          type="text"
+                          placeholder="Add custom color name (e.g. Maroon, Emerald)..."
+                          value={customColorInput}
+                          onChange={(e) => setCustomColorInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              handleAddCustomColor();
+                            }
+                          }}
+                          className="flex-1 px-3 py-1.5 rounded-xl bg-background border border-border text-xs outline-none focus:border-primary"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleAddCustomColor}
+                          className="px-3.5 py-1.5 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:opacity-90 transition-all flex items-center gap-1"
+                        >
+                          <Plus size={13} /> Add Color
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex justify-end gap-2.5 pt-4 border-t border-border">
@@ -741,23 +892,27 @@ export default function InventoryPage() {
                     type="file"
                     ref={fileInputRef}
                     accept="image/*"
+                    multiple
                     onChange={handleFileUpload}
                     className="hidden"
                   />
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    disabled={uploadingFile || formData.imageUrls.length >= 7}
+                    disabled={uploadingFile}
                     className="w-full py-3 rounded-xl bg-primary/10 border border-primary/30 text-primary font-bold text-xs flex items-center justify-center gap-2 hover:bg-primary/20 transition-all shadow-sm"
                   >
                     {uploadingFile ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
-                    Upload Photo from Device (Phone / PC)
+                    Upload Photos (Select Multiple)
                   </button>
+                  <p className="text-[11px] text-muted-foreground mt-1 text-center">
+                    Select multiple photos from your device. First photo is the main view.
+                  </p>
                 </div>
 
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-xs font-bold uppercase text-muted-foreground flex items-center gap-1.5">
-                    <ImageIcon size={14} /> Attached Photos ({formData.imageUrls.length}/7)
+                    <ImageIcon size={14} /> Attached Photos ({formData.imageUrls.length})
                   </h3>
                   {formData.imageUrls.length > 0 && (
                     <button
@@ -765,35 +920,60 @@ export default function InventoryPage() {
                       onClick={() => setFormData(prev => ({ ...prev, imageUrls: [] }))}
                       className="text-[11px] text-red-500 hover:underline"
                     >
-                      Clear
+                      Clear All
                     </button>
                   )}
                 </div>
 
                 {/* Selected Images Tray */}
-                <div className="flex flex-wrap gap-2 p-3 bg-muted/30 rounded-2xl min-h-24 border border-border">
+                <div className="flex flex-wrap gap-2 p-3 bg-muted/30 rounded-2xl min-h-24 max-h-72 overflow-y-auto border border-border">
                   {formData.imageUrls.map((img, idx) => (
-                    <div key={img} className="relative group w-16 h-16 rounded-xl overflow-hidden border border-border bg-card shadow-sm">
+                    <div key={img} className="relative group w-20 h-20 rounded-xl overflow-hidden border border-border bg-card shadow-sm flex-shrink-0">
                       <img src={formatImageUrl(img)} alt="" className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => removeImage(img)}
-                        className="absolute inset-0 bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Remove photo"
-                      >
-                        <X size={16} />
-                      </button>
+                      
+                      {/* Hover action overlay */}
+                      <div className="absolute inset-0 bg-black/65 text-white flex flex-col items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity p-1">
+                        {idx !== 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setAsMainImage(img)}
+                            className="text-[9px] bg-primary text-white font-extrabold px-1.5 py-0.5 rounded shadow hover:scale-105 transition-transform"
+                            title="Set as main photo"
+                          >
+                            Make Main
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => removeImage(img)}
+                          className="text-[10px] bg-red-600/90 text-white font-bold px-1.5 py-0.5 rounded shadow hover:bg-red-700 flex items-center gap-0.5"
+                          title="Remove photo"
+                        >
+                          <X size={12} /> Remove
+                        </button>
+                      </div>
+
+                      {/* Badges */}
                       {idx === 0 && (
-                        <span className="absolute bottom-0 inset-x-0 bg-primary text-[8px] text-white text-center font-bold">Main</span>
+                        <span className="absolute bottom-0 inset-x-0 bg-primary text-[9px] text-white text-center font-black uppercase py-0.5 shadow">
+                          Main Photo
+                        </span>
                       )}
                       {idx === 1 && (
-                        <span className="absolute bottom-0 inset-x-0 bg-black/75 text-[8px] text-white text-center font-bold">2nd (b)</span>
+                        <span className="absolute bottom-0 inset-x-0 bg-black/80 text-[8px] text-white text-center font-bold py-0.5">
+                          Back (b)
+                        </span>
+                      )}
+                      {idx > 1 && (
+                        <span className="absolute top-1 left-1 bg-black/60 text-white text-[9px] font-bold px-1 rounded">
+                          #{idx + 1}
+                        </span>
                       )}
                     </div>
                   ))}
                   {formData.imageUrls.length === 0 && (
                     <div className="text-xs text-muted-foreground py-8 text-center italic w-full">
-                      No photos attached yet. Click &quot;Upload Photo from Device&quot; above to attach pictures of this souvenir.
+                      No photos attached yet. Click &quot;Upload Photos (Select Multiple)&quot; above to attach pictures of this souvenir.
                     </div>
                   )}
                 </div>

@@ -104,7 +104,7 @@ export async function POST(req: Request) {
       - T-Shirts / Collared Shirts -> Category: "Shirts", Default price: 100 GHC
       - Neckerchiefs / Scarf -> Category: "Neckerchiefs & Slides", Default price: 65 GHC
       - Neckerchief Slides / Woggles -> Category: "Neckerchiefs & Slides", Default price: 30 GHC
-      - Baseball Caps / Berets / Crests -> Category: "Caps & Crests", Default price: 50 GHC (crest: 20 GHC)
+      - Caps / Berets / Crests / Hats -> Category: "Caps & Crests", Default price: 50 GHC (crest: 20 GHC). CRITICAL RULE: NEVER use the word "Baseball" in product names or descriptions! Always name them "Club Cap", "Cap", "Beret", or "Unit Cap - [Unit]", NEVER "Baseball Cap".
       - Water bottles -> Category: "Accessories", Default price: 150 GHC
 
       STRICT NAMING & DESCRIPTION CONVENTION (CRITICAL):
@@ -115,6 +115,7 @@ export async function POST(req: Request) {
            * "Unit T-Shirt - Capricorn" (NEVER Club T-Shirt)
            * "Unit Hoodie - Chrysanthemum" (NEVER Club Hoodie)
            * "Unit Hoodie - Tiger"
+           * "Unit Cap - Capricorn" (NEVER Baseball Cap)
            * "Unit Sew-on Tag - Capricorn"
          - Description: "Official Unit [Item] for [Unit] Unit."
 
@@ -123,19 +124,21 @@ export async function POST(req: Request) {
          - Examples:
            * "Club Hoodie" (Default price: 350 GHC)
            * "Club T-Shirt" (Default price: 100 GHC)
+           * "Club Cap" (NEVER Club Baseball Cap)
            * "Club Neckerchief"
            * "Club Beret"
          - Description: "Official Majestic Peacock Club [Item]."
 
       Return ONLY a pure raw JSON object with NO markdown backticks:
       {
-        "name": "Unit Hoodie - Chrysanthemum" or "Club Hoodie",
+        "name": "Unit Hoodie - Chrysanthemum" or "Club Hoodie" or "Club Cap",
         "unit": "Capricorn" | "Tiger" | "Chrysanthemum" | "Club Wears",
-        "description": "Short description mentioning unit or club regalia",
+        "description": "Short description mentioning unit or club regalia (no mention of baseball)",
         "category": "Shirts" | "Hoodies" | "Neckerchiefs & Slides" | "Caps & Crests" | "Tags & Pins" | "Accessories",
         "price": number,
         "requiresSize": boolean,
-        "requiresColor": boolean
+        "requiresColor": boolean,
+        "availableColors": ["Club Green", "Black", "White", "Gold", "Navy Blue"]
       }
     `;
 
@@ -220,6 +223,19 @@ export async function POST(req: Request) {
       if (data.name && data.name.toLowerCase().startsWith('unit ')) {
         data.name = data.name.replace(/^unit\s+/i, 'Club ');
       }
+    }
+
+    // Safeguard: NEVER allow "Baseball" in product names or descriptions
+    if (data.name) {
+      data.name = data.name.replace(/\bbaseball\s*/gi, '').replace(/\s{2,}/g, ' ').trim();
+    }
+    if (data.description) {
+      data.description = data.description.replace(/\bbaseball\s*/gi, '').replace(/\s{2,}/g, ' ').trim();
+    }
+
+    // Default availableColors if requiresColor is true
+    if (data.requiresColor && (!data.availableColors || data.availableColors.length === 0)) {
+      data.availableColors = ["Club Green", "Black", "White", "Gold", "Navy Blue"];
     }
 
     if (secondaryImage) {
