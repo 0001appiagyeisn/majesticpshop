@@ -12,7 +12,7 @@ interface CartDrawerProps {
   onClose: () => void;
 }
 
-const WHATSAPP_PHONE = "233593839451";
+const WHATSAPP_PHONE = process.env.NEXT_PUBLIC_WHATSAPP_PHONE || "233593839451";
 
 export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
   const { cart, removeFromCart, updateQuantity, clearCart, cartTotal } = useCart();
@@ -50,6 +50,8 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
     }
   };
 
+  const [whatsappUrl, setWhatsappUrl] = useState("");
+
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!customerInfo.name || !customerInfo.contact || !customerInfo.church || !customerInfo.district) {
@@ -58,42 +60,61 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
     }
 
     setIsSubmitting(true);
+
+    // Generate immediate fallback order reference so checkout is never blocked
+    const fallbackId = "ORD-" + Date.now().toString(36).toUpperCase() + "-" + Math.random().toString(36).substring(2, 6).toUpperCase();
+    let currentOrderId = fallbackId;
+
     try {
-      // 1. Save order to Firebase Firestore
-      const newOrderId = await addOrder({
+      // 1. Save order to Firebase Firestore with safety timeout (max 3.5s)
+      const savePromise = addOrder({
         customerInfo,
         items: cart,
         totalPrice: cartTotal,
         status: "Pending",
       });
 
-      setOrderId(newOrderId);
+      const timeoutPromise = new Promise<string>((_, reject) =>
+        setTimeout(() => reject(new Error("Timeout saving to database")), 3500)
+      );
 
-      // 2. Format WhatsApp message
-      const itemsText = cart.map((item, idx) => {
-        const details = [
-          item.selectedSize ? `Size: ${item.selectedSize}` : "",
-          item.selectedColor ? `Color: ${item.selectedColor}` : "",
-        ].filter(Boolean).join(" | ");
-
-        return `${idx + 1}. *${item.product.name}* (x${item.quantity}) - GHC ${(item.product.price * item.quantity).toFixed(2)}${details ? `\n   ↳ ${details}` : ""}`;
-      }).join("\n");
-
-      const message = `🦚 *MAJESTY PEACOCK PATHFINDER CLUB*\n*Official Souvenir Order*\n--------------------------------\n📋 *Order Ref:* #${newOrderId.slice(0, 8).toUpperCase()}\n\n👤 *Personal Information:*\n• *Name:* ${customerInfo.name}\n• *Age:* ${customerInfo.age || "N/A"}\n• *Gender:* ${customerInfo.gender}\n• *Church:* ${customerInfo.church}\n• *District:* ${customerInfo.district}\n• *Contact:* ${customerInfo.contact}\n\n🛍️ *Items Ordered:*\n${itemsText}\n--------------------------------\n💰 *Total Amount:* *GHC ${cartTotal.toFixed(2)}*\n\n(Kindly confirm MoMo details for payment receipt)`;
-
-      const encodedMessage = encodeURIComponent(message);
-      const whatsappUrl = `https://wa.me/${WHATSAPP_PHONE}?text=${encodedMessage}`;
-
-      // 3. Clear cart and open WhatsApp
-      clearCart();
-      setStep("success");
-      window.open(whatsappUrl, "_blank");
-
+      const savedId = await Promise.race([savePromise, timeoutPromise]);
+      if (savedId) {
+        currentOrderId = savedId;
+      }
     } catch (err) {
-      console.error("Order processing error:", err);
-      alert("Failed to submit order. Please check your internet connection.");
-    } finally {
-      setIsSubmitting(false);
+      console.warn("Could not save to database immediately, proceeding to WhatsApp:", err);
+      // We continue to WhatsApp! We do NOT block the customer from checking out.
+    }
+
+    setOrderId(currentOrderId);
+
+    // 2. Format WhatsApp message
+    const itemsText = cart.map((item, idx) => {
+      const details = [
+        item.selectedSize ? `Size: ${item.selectedSize}` : "",
+        item.selectedColor ? `Color: ${item.selectedColor}` : "",
+      ].filter(Boolean).join(" | ");
+
+      return `${idx + 1}. *${item.product.name}* (x${item.quantity}) - GHC ${(item.product.price * item.quantity).toFixed(2)}${details ? `\n   ↳ ${details}` : ""}`;
+    }).join("\n");
+
+    const message = `🦚 *MAJESTY PEACOCK PATHFINDER CLUB*\n*Official Souvenir Order*\n--------------------------------\n📋 *Order Ref:* #${currentOrderId.slice(0, 8).toUpperCase()}\n\n👤 *Personal Information:*\n• *Name:* ${customerInfo.name}\n• *Age:* ${customerInfo.age || "N/A"}\n• *Gender:* ${customerInfo.gender}\n• *Church:* ${customerInfo.church}\n• *District:* ${customerInfo.district}\n• *Contact:* ${customerInfo.contact}\n\n🛍️ *Items Ordered:*\n${itemsText}\n--------------------------------\n💰 *Total Amount:* *GHC ${cartTotal.toFixed(2)}*\n\n(Kindly confirm MoMo details for payment receipt)`;
+
+    const encodedMessage = encodeURIComponent(message);
+    const targetUrl = `https://wa.me/${WHATSAPP_PHONE}?text=${encodedMessage}`;
+    setWhatsappUrl(targetUrl);
+
+    // 3. Clear cart and set step to success
+    clearCart();
+    setStep("success");
+    setIsSubmitting(false);
+
+    // 4. Open WhatsApp directly (location.href works reliably on mobile without being blocked)
+    try {
+      window.location.href = targetUrl;
+    } catch {
+      window.open(targetUrl, "_blank");
     }
   };
 
@@ -345,21 +366,31 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                   <div className="w-16 h-16 rounded-full bg-green-500/10 text-green-500 flex items-center justify-center">
                     <CheckCircle2 size={36} />
                   </div>
-                  <h3 className="text-xl font-bold text-foreground">Order Forwarded to WhatsApp!</h3>
+                  <h3 className="text-xl font-bold text-foreground">Order Ready to Send!</h3>
                   <p className="text-sm text-muted-foreground max-w-xs">
-                    Your order details have been securely recorded in our database and opened in WhatsApp with the pre-filled summary.
+                    Your order details have been prepared for the club officers. Tap below if WhatsApp did not open automatically:
                   </p>
                   {orderId && (
-                    <div className="p-3 bg-muted rounded-xl font-mono text-xs text-foreground font-bold">
+                    <div className="p-2.5 bg-muted rounded-xl font-mono text-xs text-foreground font-bold">
                       Ref: #{orderId.slice(0, 10).toUpperCase()}
                     </div>
                   )}
+                  {whatsappUrl && (
+                    <a
+                      href={whatsappUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-3.5 bg-[#25D366] hover:bg-[#20ba59] text-white rounded-xl font-bold text-sm shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95"
+                    >
+                      <Send size={18} /> Open WhatsApp to Send Order
+                    </a>
+                  )}
                   <p className="text-xs text-muted-foreground">
-                    Send the WhatsApp message to complete your order, and our club officer will follow up with MoMo payment details.
+                    Send the pre-filled message in WhatsApp to confirm your items, and the club officer will reply with payment instructions.
                   </p>
                   <button
                     onClick={handleClose}
-                    className="w-full py-3 bg-primary text-primary-foreground rounded-xl font-bold text-sm hover:opacity-90 shadow-md"
+                    className="w-full py-2.5 bg-card border border-border text-foreground rounded-xl font-bold text-xs hover:bg-muted"
                   >
                     Done
                   </button>

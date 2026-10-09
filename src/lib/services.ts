@@ -55,10 +55,28 @@ export const getProduct = async (id: string): Promise<Product | null> => {
   return docSnap.exists() ? ({ id: docSnap.id, ...docSnap.data() } as Product) : null;
 };
 
+// Helper to recursively remove undefined fields so Firestore setDoc/updateDoc never fails
+export function sanitizeForFirestore<T = any>(obj: T): T {
+  if (obj === undefined) return null as any;
+  if (obj === null || typeof obj !== "object") return obj;
+  if (obj instanceof Date) return obj;
+  if (Array.isArray(obj)) {
+    return obj.map(sanitizeForFirestore) as any;
+  }
+  const result: Record<string, any> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined) {
+      result[key] = sanitizeForFirestore(value);
+    }
+  }
+  return result as T;
+}
+
 export const addProduct = async (product: Omit<Product, 'id' | 'createdAt'>) => {
   const newDocRef = doc(collection(db, "products"));
+  const cleanProduct = sanitizeForFirestore(product);
   const productData = { 
-    ...product, 
+    ...cleanProduct, 
     id: newDocRef.id,
     createdAt: serverTimestamp() 
   };
@@ -68,7 +86,8 @@ export const addProduct = async (product: Omit<Product, 'id' | 'createdAt'>) => 
 
 export const updateProduct = async (id: string, data: Partial<Product>) => {
   const docRef = doc(db, "products", id);
-  await updateDoc(docRef, data);
+  const cleanData = sanitizeForFirestore(data);
+  await updateDoc(docRef, cleanData);
 };
 
 export const deleteProduct = async (id: string) => {
@@ -85,8 +104,9 @@ export const getOrders = async (): Promise<Order[]> => {
 
 export const addOrder = async (order: Omit<Order, 'id' | 'createdAt'>) => {
   const newDocRef = doc(collection(db, "orders"));
+  const cleanOrder = sanitizeForFirestore(order);
   const orderData = { 
-    ...order, 
+    ...cleanOrder, 
     id: newDocRef.id,
     createdAt: serverTimestamp() 
   };
